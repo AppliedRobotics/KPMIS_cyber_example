@@ -10,14 +10,15 @@
 
 | Папка | Что внутри |
 |---|---|
-| [`curriculum`](curriculum) | Учебные программы на 34 и 68 часов (Markdown и Word) |
+| [`curriculum`](curriculum) | Учебные программы на 34 и 68 часов (Markdown и PDF) |
 | [`lessons`](lessons) | 51 пример к учебным программам на 34 и 68 часов (Arduino IDE) и 24 проекта AR BBL, таблица по урокам |
 | [`ar_bbl_examples`](ar_bbl_examples) | 19 проектов AR BBL для ESP32 и Arduino с описанием особенностей блоков, сгенерированный C++-код |
 | [`board_tests`](board_tests) | Тесты контроллера, моторов и модулей датчиков Kirus |
 | [`mecanum_4wd`](mecanum_4wd) | Мобильная платформа 4WD с меканум-колёсами: тест и пульт по Wi-Fi |
 | [`manipulator`](manipulator) | Манипулятор на сервоприводах Feetech ST3215: веб-настройщик и мост для ESP32 |
+| [`tools`](tools) | Программы обновления прошивки аккумуляторного модуля 12V_3A_PowerBank |
 | [`libraries`](libraries) | Библиотеки DxlMaster2 и FeetechSTS |
-| [`docs`](docs) | Описания электронных модулей с инфографикой ([`docs/hardware`](docs/hardware)) и инструкции по установке Arduino IDE и AR BBL в МОС Desktop 12 |
+| [`docs`](docs) | Описания электронных модулей с инфографикой ([`docs/hardware`](docs/hardware)) и инструкции: установка Arduino IDE и AR BBL в МОС Desktop 12, обновление прошивки аккумуляторного модуля |
 | `_old_examples` | Предыдущий набор примеров |
 
 ## Быстрый старт
