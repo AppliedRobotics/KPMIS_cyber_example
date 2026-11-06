@@ -15,11 +15,12 @@
 | [`board_tests`](board_tests) | Тесты контроллера, моторов и модулей датчиков Kirus |
 | [`mecanum_4wd`](mecanum_4wd) | Мобильная платформа 4WD с меканум-колёсами: тест и пульт по Wi-Fi |
 | [`libraries`](libraries) | Библиотеки DxlMaster2 и FeetechSTS |
+| [`docs`](docs) | Инструкции: установка Arduino IDE и AR BBL в МОС Desktop 12 |
 | `_old_examples` | Предыдущий набор примеров |
 
 ## Быстрый старт
 
-1. Установить Arduino IDE и пакет плат **esp32** (Espressif).
+1. Установить Arduino IDE и пакет плат **esp32** (Espressif). Для МОС Desktop 12 есть [инструкция](docs/install_arduino_ide_mos.md); для блочной среды — [установка AR BBL](docs/install_ar_bbl_mos.md).
 2. Установить библиотеки из папки [`libraries`](libraries) («Добавить .ZIP библиотеку»).
 3. Открыть пример: папка и файл `.ino` должны называться одинаково.
 4. Выставить DIP-переключатели, как написано в начале примера.
