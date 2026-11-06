@@ -1,7 +1,8 @@
 /*
-  Ardu8_Feetech_Bridge — мост «USB ↔ шина DXL» для веб-настройщика Feetech.
+  Ardu8_Feetech_Bridge — мост «USB ↔ шина DXL» для веб-страницы «Настройщик сервоприводов».
 
-  Прошивается в ESP32 платы Ardu8 (нижний USB-C).
+  Прошивается в ESP32 робототехнического контроллера «Кибернетический» (Ardu8),
+  нижний USB-C.
   В Arduino IDE: плата «ESP32 Wrover Module» (или «ESP32 Dev Module»).
 
   Переключатели: DIP3 = ON, DIP4 = OFF (шиной управляет ESP32).
