@@ -10,6 +10,7 @@
 
 | Папка | Что внутри |
 |---|---|
+| [`curriculum`](curriculum) | Учебные программы на 34 и 68 часов (Markdown и Word) |
 | [`lessons`](lessons) | 51 пример к учебным программам на 34 и 68 часов (Arduino IDE) и 24 проекта AR BBL, таблица по урокам |
 | [`ar_bbl_examples`](ar_bbl_examples) | 19 проектов AR BBL для ESP32 и Arduino с описанием особенностей блоков, сгенерированный C++-код |
 | [`board_tests`](board_tests) | Тесты контроллера, моторов и модулей датчиков Kirus |
