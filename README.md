@@ -14,6 +14,7 @@
 | [`ar_bbl_examples`](ar_bbl_examples) | 19 проектов AR BBL для ESP32 и Arduino с описанием особенностей блоков, сгенерированный C++-код |
 | [`board_tests`](board_tests) | Тесты контроллера, моторов и модулей датчиков Kirus |
 | [`mecanum_4wd`](mecanum_4wd) | Мобильная платформа 4WD с меканум-колёсами: тест и пульт по Wi-Fi |
+| [`manipulator`](manipulator) | Манипулятор на сервоприводах Feetech ST3215: веб-настройщик и мост для ESP32 |
 | [`libraries`](libraries) | Библиотеки DxlMaster2 и FeetechSTS |
 | [`docs`](docs) | Инструкции: установка Arduino IDE и AR BBL в МОС Desktop 12 |
 | `_old_examples` | Предыдущий набор примеров |
