@@ -16,6 +16,7 @@
 | [`board_tests`](board_tests) | Тесты контроллера, моторов и модулей датчиков Kirus |
 | [`mecanum_4wd`](mecanum_4wd) | Мобильная платформа 4WD с меканум-колёсами: тест и пульт по Wi-Fi |
 | [`manipulator`](manipulator) | Манипулятор на сервоприводах Feetech ST3215: веб-настройщик и мост для ESP32 |
+| [`lidar`](lidar) | Лидар YDLIDAR X3 Pro на Orange Pi 5B: инструкция, Python-программы, настройки ROS 2 и SLAM |
 | [`tools`](tools) | Программы обновления прошивки аккумуляторного модуля 12V_3A_PowerBank |
 | [`libraries`](libraries) | Библиотеки DxlMaster2 и FeetechSTS |
 | [`docs`](docs) | Описания электронных модулей с инфографикой ([`docs/hardware`](docs/hardware)) и инструкции: установка Arduino IDE и AR BBL в МОС Desktop 12, обновление прошивки аккумуляторного модуля |
