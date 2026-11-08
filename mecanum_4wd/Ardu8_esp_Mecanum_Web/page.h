@@ -62,6 +62,22 @@ main{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:1
 .ang{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:14px}
 .ang div{border:1px solid var(--line);border-radius:10px;padding:8px;text-align:center;font-size:12px;color:var(--dim)}
 .ang b{display:block;font-size:20px;color:var(--text);font-variant-numeric:tabular-nums}
+.jrow{margin-top:12px}
+.jh{display:flex;align-items:center;gap:8px;font-size:14px}
+.jh .jv{margin-left:auto;color:var(--dim);font-size:13px;font-variant-numeric:tabular-nums;text-align:right}
+.jrow input[type=range]{width:100%;accent-color:var(--orange);height:30px;margin:4px 0 0;touch-action:pan-y}
+#joints.locked input[type=range]{pointer-events:none;opacity:.45}
+.lock{width:100%;margin-top:12px;min-height:48px;font-size:15px;display:flex;align-items:center;justify-content:center;gap:10px}
+.lock svg{width:20px;height:20px;flex:none}
+.lock.open{background:#3A2A12;border-color:var(--orange);color:var(--text)}
+.btns{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+.btns .btn{flex:1 1 120px}
+.btn.on{background:var(--orange);color:#1F0D00;border-color:var(--orange)}
+.row select{flex:1;min-height:40px;background:#20242C;color:var(--text);border:1px solid var(--line);border-radius:10px;padding:0 10px;font-size:15px}
+.arm h3{margin:18px 0 0;font-size:14px;font-weight:600}
+.pose{display:flex;align-items:center;gap:8px;margin-top:8px;font-size:13px;color:var(--dim)}
+.pose span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-variant-numeric:tabular-nums}
+.pose .btn{min-height:36px;padding:0 12px;font-size:14px}
 </style>
 </head>
 <body>
@@ -106,6 +122,35 @@ main{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:1
 <p class="hint">Полоса — мощность (вправо — вперёд). Скорость в тиках энкодера за 100 мс.</p>
 </section>
 
+<section class="card arm">
+<h2 id="armTitle">Манипулятор</h2>
+<div class="mod"><span class="dot" id="armDot"></span><span id="armStat">Ищем сервоприводы…</span></div>
+<button class="btn lock" id="armLock" aria-pressed="false">
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"></rect><path id="lockShackle" d="M8 11V7a4 4 0 0 1 8 0v4"></path></svg>
+<span id="armLockTxt">Разблокировать ползунки</span>
+</button>
+<div id="joints" class="locked"></div>
+<div class="btns">
+<button class="btn" id="armHold">Удерживать</button>
+<button class="btn" id="armRel">Отпустить</button>
+<button class="btn" id="armHome">Поза модели</button>
+</div>
+<div class="btns">
+<button class="btn" id="gOpen">Схват: раскрыть</button>
+<button class="btn" id="gClose">Схват: сомкнуть</button>
+</div>
+<div class="row"><label for="armSpd">Скорость</label><select id="armSpd"><option value="300">медленно</option><option value="800" selected>средне</option><option value="1500">быстро</option></select></div>
+<h3>Позы</h3>
+<div class="btns">
+<button class="btn" id="poseSave">Запомнить позу</button>
+<button class="btn" id="posePlay">Проиграть по кругу</button>
+</div>
+<div id="poses"></div>
+<p class="hint">Чтобы двигать ползунками, сначала нажмите кнопку с замком: ползунки разблокируются на 20 с и снова блокируются сами. Пока они заблокированы, страницу можно спокойно прокручивать. Кнопки «Поза модели», «Схват» и позы работают всегда.</p>
+<p class="hint">Кружок у сустава: зелёный — сервопривод на связи, жёлтый — привод сообщает об ошибке (причина в строке), красный — не отвечает. «Связь N%» — доля ответов привода за последние 50 опросов.</p>
+<p class="hint">Углы суставов — от позы модели: плечо вертикально, предплечье и кисть вперёд, схват смотрит вниз. Схват: 0° — раскрыт, 70° — сомкнут. Движение ползунком включает удержание. Позы хранятся в этом браузере.</p>
+</section>
+
 <section class="card">
 <h2>Модули</h2>
 <div class="mods">
@@ -117,6 +162,7 @@ main{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:1
 <div class="mod"><span class="dot" id="dUp"></span>ESP32 работает<span class="v" id="vUp">—</span></div>
 <div class="mod"><span class="dot ok"></span>Последний запуск<span class="v" id="vRst">—</span></div>
 <div class="mod"><span class="dot ok"></span>Запусков всего<span class="v" id="vBoots">—</span></div>
+<div class="mod"><span class="dot" id="dArm"></span><span id="nArm">Манипулятор</span><span class="v" id="vArm">—</span></div>
 </div>
 </section>
 
@@ -292,6 +338,7 @@ function render(s) {
   }
 
   renderImu(s);
+  if (s.arm) renderArm(s.arm);
 
   const a = $('alert');
   const msg = s.estop ? 'Аварийный стоп: нажата кнопка 3 на Arduino.'
@@ -315,6 +362,166 @@ async function tick() {
   clearTimeout(to);
   setTimeout(tick, 100);
 }
+
+// ================= Манипулятор =================
+const ARM_UNLOCK_S = 20;   // ползунки блокируются снова через столько секунд без движения
+const ARM = {cfg: null, unlockedAt: 0, t: [], a: [], f: [], tq: false, edited: 0, drag: -1, rows: [], poses: [], playing: false, synced: false};
+let armTimer = 0;
+
+async function armInit() {
+  try { ARM.cfg = await (await fetch('/armcfg', {cache: 'no-store'})).json(); }
+  catch (e) { setTimeout(armInit, 2000); return; }
+  $('armTitle').textContent = ARM.cfg.type;
+  $('nArm').textContent = ARM.cfg.type;
+  const box = $('joints');
+  ARM.cfg.joints.forEach((j, i) => {
+    ARM.t[i] = 0;
+    const row = document.createElement('div'); row.className = 'jrow';
+    const h = document.createElement('div'); h.className = 'jh';
+    const dot = document.createElement('span'); dot.className = 'dot';
+    const nm = document.createElement('span'); nm.textContent = j.n;
+    const v = document.createElement('span'); v.className = 'jv'; v.textContent = '—';
+    h.append(dot, nm, v);
+    const r = document.createElement('input'); r.type = 'range'; r.min = j.min; r.max = j.max; r.step = 1; r.value = 0;
+    r.setAttribute('aria-label', j.n);
+    r.disabled = true;
+    r.addEventListener('input', () => {
+      if (!armUnlocked()) { r.value = Math.round(ARM.t[i]); return; }
+      ARM.t[i] = +r.value; ARM.edited = Date.now(); ARM.unlockedAt = Date.now(); armQueue();
+    });
+    r.addEventListener('pointerdown', () => ARM.drag = i);
+    ['pointerup', 'pointercancel'].forEach(ev => r.addEventListener(ev, () => { ARM.drag = -1; ARM.edited = Date.now(); }));
+    row.append(h, r); box.append(row);
+    ARM.rows.push({dot, v, r});
+  });
+  try { ARM.poses = JSON.parse(localStorage.getItem('pult.arm.poses.' + ARM.cfg.type) || '[]'); } catch (e) { ARM.poses = []; }
+  renderPoses();
+}
+
+// ---- блокировка ползунков от случайных касаний при прокрутке ----
+function armUnlocked() { return ARM.unlockedAt && Date.now() - ARM.unlockedAt < ARM_UNLOCK_S * 1000; }
+function armSetLock(locked) {
+  ARM.unlockedAt = locked ? 0 : Date.now();
+  $('joints').classList.toggle('locked', locked);
+  ARM.rows.forEach(row => row.r.disabled = locked);
+  if (locked) ARM.drag = -1;
+  armLockView();
+}
+function armLockView() {
+  const open = armUnlocked();
+  const b = $('armLock');
+  b.classList.toggle('open', open);
+  b.setAttribute('aria-pressed', String(open));
+  $('lockShackle').setAttribute('d', open ? 'M8 11V7a4 4 0 0 1 7.5-2' : 'M8 11V7a4 4 0 0 1 8 0v4');
+  $('armLockTxt').textContent = open
+    ? 'Разблокировано · ещё ' + Math.max(0, Math.ceil(ARM_UNLOCK_S - (Date.now() - ARM.unlockedAt) / 1000)) + ' с · заблокировать'
+    : 'Разблокировать ползунки';
+}
+$('armLock').addEventListener('click', () => armSetLock(armUnlocked()));
+setInterval(() => {
+  if (ARM.unlockedAt && !armUnlocked() && ARM.drag < 0) armSetLock(true);
+  else if (armUnlocked()) { if (ARM.drag >= 0) ARM.unlockedAt = Date.now(); armLockView(); }
+}, 500);
+
+function armSpeed() { return +$('armSpd').value; }
+function armQueue() {
+  if (armTimer) return;
+  armTimer = setTimeout(() => { armTimer = 0; armSendTargets(); }, 120);
+}
+function armSendTargets() {
+  ARM.edited = Date.now();
+  fetch('/arm?t=' + ARM.t.map(x => (+x).toFixed(1)).join(',') + '&sp=' + armSpeed()).catch(() => {});
+}
+function armCmd(c) { ARM.edited = Date.now(); fetch('/arm?cmd=' + c + '&sp=' + armSpeed()).catch(() => {}); }
+function setSliders() { ARM.rows.forEach((row, i) => { if (ARM.drag !== i) row.r.value = Math.round(ARM.t[i]); }); }
+
+$('armHold').addEventListener('click', () => armCmd('hold'));
+$('armRel').addEventListener('click', () => { stopPlay(); armCmd('release'); });
+$('armHome').addEventListener('click', () => { if (!ARM.cfg) return; ARM.t = ARM.t.map(() => 0); setSliders(); armCmd('home'); });
+function setGrip(v) { if (!ARM.cfg) return; const k = ARM.cfg.joints.length - 1; ARM.t[k] = v; setSliders(); armSendTargets(); }
+$('gOpen').addEventListener('click', () => setGrip(ARM.cfg ? ARM.cfg.joints[ARM.cfg.joints.length - 1].min : 0));
+$('gClose').addEventListener('click', () => setGrip(ARM.cfg ? ARM.cfg.joints[ARM.cfg.joints.length - 1].max : 70));
+
+// Биты ошибки в ответе сервопривода Feetech
+function servoErr(e) {
+  const m = [[1, 'напряжение'], [2, 'датчик угла'], [4, 'перегрев'], [8, 'ток'], [32, 'перегрузка']];
+  const t = m.filter(([b]) => e & b).map(([, n]) => n);
+  return t.length ? t.join(', ') : 'ошибка ' + e;
+}
+
+function renderArm(a) {
+  if (!ARM.cfg) return;
+  ARM.tq = !!a.tq; ARM.a = a.a; ARM.f = a.f;
+  const n = a.f.filter(x => x).length, N = a.f.length;
+  $('armDot').className = 'dot ' + (n === N ? 'ok' : n ? 'warn' : 'bad');
+  $('armStat').textContent = n ? 'Сервоприводов: ' + n + ' из ' + N + ' · ' + (ARM.tq ? 'удерживается' : 'отпущен')
+                               : 'Сервоприводы не найдены — DIP3, питание, ID 1–' + N + ' на 1 Мбит/с';
+  $('dArm').className = 'dot ' + (n === N ? 'ok' : n ? 'warn' : 'bad');
+  $('vArm').textContent = n + ' из ' + N;
+  $('armHold').classList.toggle('on', ARM.tq);
+  // Ползунки следуют за манипулятором, пока их не трогают:
+  // при удержании — за целью из ESP32, без удержания — за реальным положением.
+  const quiet = ARM.drag < 0 && !armTimer && Date.now() - ARM.edited > 1500;
+  if (quiet || !ARM.synced) {
+    ARM.t = ARM.cfg.joints.map((j, i) => {
+      const v = ARM.tq ? a.t[i] : (a.a[i] !== null ? a.a[i] : ARM.t[i]);
+      return Math.max(j.min, Math.min(j.max, v));
+    });
+    ARM.synced = true;
+    setSliders();
+  }
+  ARM.rows.forEach((row, i) => {
+    row.dot.className = 'dot ' + (a.f[i] ? (a.e[i] ? 'warn' : 'ok') : 'bad');
+    const act = a.a[i] === null ? '—' : Math.round(a.a[i]) + '°';
+    const q = a.q ? a.q[i] : 100;
+    row.v.textContent = 'цель ' + Math.round(ARM.t[i]) + '° · факт ' + act
+      + (a.f[i] && q < 100 ? ' · связь ' + q + '%' : '')
+      + (a.e[i] ? ' · ' + servoErr(a.e[i]) : '');
+  });
+}
+
+// ---- позы ----
+function savePoses() { try { localStorage.setItem('pult.arm.poses.' + ARM.cfg.type, JSON.stringify(ARM.poses)); } catch (e) {} }
+function renderPoses() {
+  const box = $('poses'); box.textContent = '';
+  if (!ARM.poses.length) { const p = document.createElement('p'); p.className = 'hint'; p.textContent = 'Поз пока нет.'; box.append(p); return; }
+  ARM.poses.forEach((ps, k) => {
+    const row = document.createElement('div'); row.className = 'pose';
+    const t = document.createElement('span'); t.textContent = (k + 1) + ': ' + ps.map(x => Math.round(x)).join(' · ');
+    const go = document.createElement('button'); go.className = 'btn'; go.textContent = 'Перейти';
+    go.addEventListener('click', () => { stopPlay(); ARM.t = ps.slice(); setSliders(); armSendTargets(); });
+    const del = document.createElement('button'); del.className = 'btn'; del.textContent = '✕'; del.setAttribute('aria-label', 'Удалить позу ' + (k + 1));
+    del.addEventListener('click', () => { ARM.poses.splice(k, 1); savePoses(); renderPoses(); });
+    row.append(t, go, del); box.append(row);
+  });
+}
+$('poseSave').addEventListener('click', () => {
+  if (!ARM.cfg) return;
+  const src = ARM.tq ? ARM.t : ARM.t.map((x, i) => ARM.a[i] !== null && ARM.a[i] !== undefined ? ARM.a[i] : x);
+  ARM.poses.push(src.map(x => Math.round(x * 10) / 10)); savePoses(); renderPoses();
+});
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+function stopPlay() { ARM.playing = false; $('posePlay').classList.remove('on'); $('posePlay').textContent = 'Проиграть по кругу'; }
+$('posePlay').addEventListener('click', async () => {
+  if (ARM.playing) { stopPlay(); return; }
+  if (ARM.poses.length < 2) { renderPoses(); const p = document.createElement('p'); p.className = 'hint'; p.textContent = 'Для проигрывания запомните хотя бы две позы.'; $('poses').append(p); return; }
+  ARM.playing = true; $('posePlay').classList.add('on'); $('posePlay').textContent = 'Стоп';
+  while (ARM.playing) {
+    for (const ps of ARM.poses) {
+      if (!ARM.playing) break;
+      ARM.t = ps.slice(); setSliders(); armSendTargets();
+      const t0 = Date.now();
+      await sleep(300);
+      while (ARM.playing && Date.now() - t0 < 6000) {
+        const done = ARM.t.every((x, i) => !ARM.f[i] || ARM.a[i] === null || Math.abs(ARM.a[i] - x) < 4);
+        if (done) break;
+        await sleep(100);
+      }
+      await sleep(400);
+    }
+  }
+});
+armInit();
 tick();
 </script>
 </body>

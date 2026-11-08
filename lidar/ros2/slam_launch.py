@@ -1,11 +1,11 @@
-"""Лидар YDLIDAR X3 Pro + одометрия rf2o + slam_toolbox + RViz2.
+"""Лидар YDLIDAR X3 Pro + одометрия rf2o + slam_toolbox + подписи расстояний + RViz2.
 
 Запуск:   ros2 launch ~/ydlidar_ros2_ws/slam_launch.py
 Без RViz: ros2 launch ~/ydlidar_ros2_ws/slam_launch.py rviz:=false
 """
 import os
 from launch import LaunchDescription
-from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription, TimerAction
+from launch.actions import DeclareLaunchArgument, ExecuteProcess, IncludeLaunchDescription, TimerAction
 from launch.conditions import IfCondition
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import LaunchConfiguration
@@ -46,6 +46,8 @@ def generate_launch_description():
              arguments=['--ros-args', '--log-level', 'warn']),
         # SLAM: карта /map и map -> odom (через 3 с, когда лидар раскрутится)
         TimerAction(period=3.0, actions=[slam]),
+        # подписи расстояний для RViz2 (топик /lidar_info)
+        ExecuteProcess(cmd=['python3', os.path.join(WS, 'lidar_markers.py')], output='screen'),
         # RViz2 (через 5 с)
         TimerAction(period=5.0, actions=[rviz]),
     ])
