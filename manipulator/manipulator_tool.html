@@ -242,6 +242,14 @@ li.ok .wnum::before { content: "✓"; } li.ok .wnum { font-size: 0; } li.ok .wnu
 .seg[aria-label="Способ подключения"] { display: grid; grid-template-columns: auto auto auto; }
 .seg[aria-label="Способ подключения"] button { padding: 6px 8px; font-size: 13px; white-space: nowrap; }
 
+.wkind{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;margin:0 0 12px;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--soft)}
+.wkind>span{font-weight:600;font-size:13px}
+.wkind .note{flex-basis:100%;margin:0}
+.cfg select{font:inherit;padding:4px 6px;border:1px solid var(--line);border-radius:6px;background:var(--panel);color:var(--ink)}
+.jt .ax{color:var(--accent);font-weight:600}
+.kmuted{color:var(--muted);font-size:12px}
+.pad-o .j6 b { font-size: 16px; }
+
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 </style>
 </head>
@@ -305,7 +313,7 @@ li.ok .wnum::before { content: "✓"; } li.ok .wnum { font-size: 0; } li.ok .wnu
           <span id="scanInfo" class="note"></span>
         </div>
         <div class="prog" aria-hidden="true"><i id="scanProg"></i></div>
-        <div class="list" id="servoList"><div class="empty">Подключитесь и нажмите «Найти». Заводские настройки ST3215: ID 1, 1 Мбит/с.</div></div>
+        <div class="list" id="servoList"><div class="empty">Подключитесь и нажмите «Найти». Заводские настройки ST3215 и AX-12A: ID 1, 1 Мбит/с.</div></div>
         <div class="row">
           <label class="f">Добавить вручную, ID <input type="number" id="manualId" min="0" max="253" value="1" style="width:80px"></label>
           <button type="button" class="btn sm" id="btnManual" disabled style="align-self:end">Проверить</button>
@@ -429,7 +437,7 @@ li.ok .wnum::before { content: "✓"; } li.ok .wnum { font-size: 0; } li.ok .wnu
 
         <div id="pReg" role="tabpanel" aria-labelledby="tabReg" hidden style="display:grid;gap:10px">
           <div class="row sb">
-            <p class="note">Все регистры 0–70. Зелёные адреса — оперативная память (сбрасывается при выключении).</p>
+            <p class="note">Все регистры привода (Feetech 0–70, Dynamixel AX-12A 0–49). Зелёные адреса — оперативная память (сбрасывается при выключении).</p>
             <button type="button" class="btn sm" id="btnDump">Прочитать</button>
           </div>
           <div class="scroll"><table class="regs" id="regTable"></table></div>
@@ -499,7 +507,7 @@ li.ok .wnum::before { content: "✓"; } li.ok .wnum { font-size: 0; } li.ok .wnu
               </div>
             </div>
           </div>
-          <p class="note">Держите кнопку — схват едет по прямой, углы суставов страница считает сама (обратная задача кинематики). Клавиатура: стрелки — вперёд/назад/влево/вправо, PageUp/PageDown — вверх/вниз, R/F — наклон, Q/E — поворот схвата, O/C — разомкнуть/сомкнуть.</p>
+          <p class="note">Держите кнопку — схват едет по прямой, углы суставов страница считает сама (обратная задача кинематики). Клавиатура: стрелки — вперёд/назад/влево/вправо, PageUp/PageDown — вверх/вниз, R/F — наклон, Q/E — поворот схвата, T/G — <span class="j6n">наклон схвата</span> сервоприводом ID 6 (только этот сустав, остальные стоят), O/C — разомкнуть/сомкнуть.</p>
           <div class="cart">
             <div class="pad" aria-label="Перемещение схвата">
               <div class="pad-xy">
@@ -517,6 +525,8 @@ li.ok .wnum::before { content: "✓"; } li.ok .wnum { font-size: 0; } li.ok .wnu
                 <button type="button" class="jb" data-jog="t-"><b>↙</b>Наклон к основанию</button>
                 <button type="button" class="jb" data-jog="r+"><b>⟲</b>Поворот +</button>
                 <button type="button" class="jb" data-jog="r-"><b>⟳</b>Поворот −</button>
+                <button type="button" class="jb j6" data-jog="s+"><b>↻</b><span><span class="j6n">Наклон схвата</span> +</span></button>
+                <button type="button" class="jb j6" data-jog="s-"><b>↺</b><span><span class="j6n">Наклон схвата</span> −</span></button>
                 <button type="button" class="jb jg" data-jog="g-"><b>⟷</b>Разомкнуть схват</button>
                 <button type="button" class="jb jg" data-jog="g+"><b>→←</b>Сомкнуть схват</button>
               </div>
@@ -529,6 +539,7 @@ li.ok .wnum::before { content: "✓"; } li.ok .wnum { font-size: 0; } li.ok .wnu
                 <tr><td><i class="ax ax-z"></i>Z вверх, мм</td><td class="mono" id="cZ">—</td><td><input type="number" id="cZi" step="1"></td></tr>
                 <tr><td>Наклон от вертикали, ° <small class="note">(+ наружу)</small></td><td class="mono" id="cT">—</td><td><input type="number" id="cTi" step="1" min="-120" max="120"></td></tr>
                 <tr><td>Поворот схвата, °</td><td class="mono" id="cR">—</td><td><input type="number" id="cRi" step="1" min="-180" max="180"></td></tr>
+                <tr><td><span class="j6n">Наклон схвата</span> (ID 6), °</td><td class="mono" id="cJ6">—</td><td><input type="number" id="cJ6i" step="1"></td></tr>
                 <tr><td>Схват сомкнут, %</td><td class="mono" id="cG">—</td><td></td></tr>
               </table>
               <div class="row">
@@ -564,6 +575,7 @@ li.ok .wnum::before { content: "✓"; } li.ok .wnum { font-size: 0; } li.ok .wnu
         <details class="block" id="jointCfg">
           <summary>Настройка суставов</summary>
           <p class="note">Ноль — показание привода (в шагах), при котором звено стоит как на 3D-модели: плечо вертикально, предплечье и кисть горизонтально вперёд, схват смотрит вниз и раскрыт. Кнопки «Ноль = сейчас» и «Принять текущую позу…» записывают текущее положение в сам привод как середину (2048, смещение в EEPROM), поэтому ноль становится 2048. «Инверсия» меняет направление вращения. Настройки хранятся в этом браузере.</p>
+          <p class="note"><b>Сустав 6</b> может быть собран на Dynamixel AX-12A (по умолчанию) или на Feetech ST3215 — выберите в столбце «Сервопривод». У AX-12A 1024 единицы на 300°, середина 512, а смещение нуля в сам привод не записывается: для него «Ноль = сейчас» запоминает текущее показание в столбце «Ноль».</p>
           <div class="scroll"><table class="cfg" id="cfgTable"></table></div>
           <div class="row">
             <button type="button" class="btn sm" id="cfgZeroAll">Принять текущую позу за позу модели</button>
@@ -586,7 +598,7 @@ li.ok .wnum::before { content: "✓"; } li.ok .wnum { font-size: 0; } li.ok .wnu
           </div>
           <span class="pill" id="wizPill">Готово 0 из 7</span>
         </div>
-        <p class="note">Новые ST3215 приходят с ID 1, валом в случайном положении и без фланца. Помощник по очереди готовит каждый привод: назначает ID, ставит вал в середину (2048) и показывает, как надеть фланец. Подключайте приводы <b>по одному</b>.</p>
+        <p class="note">Новые сервоприводы приходят с ID 1, валом в случайном положении и без фланца. Помощник по очереди готовит каждый привод: назначает ID, ставит вал в середину (2048 у Feetech ST3215, 512 у Dynamixel AX-12A) и показывает, как надеть фланец. Подключайте приводы <b>по одному</b>.</p>
         <div class="wiz-rail" id="wizRail" role="tablist" aria-label="Приводы"></div>
         <div class="wiz-grid">
           <div class="wiz-3d">
@@ -599,6 +611,14 @@ li.ok .wnum::before { content: "✓"; } li.ok .wnum { font-size: 0; } li.ok .wnu
           </div>
           <div class="wiz-steps">
             <h3 class="wiz-h" id="wizTitle"></h3>
+            <div class="wkind" id="wzKindRow" hidden>
+              <span>Какой сервопривод у вас на этом месте:</span>
+              <div class="seg" role="group" aria-label="Тип сервопривода">
+                <button type="button" id="wzKindAX" aria-pressed="true">Dynamixel AX-12A</button>
+                <button type="button" id="wzKindST" aria-pressed="false">Feetech ST3215</button>
+              </div>
+              <p class="note" id="wzKindNote"></p>
+            </div>
             <ol class="wsteps">
               <li id="ws1">
                 <div class="wst"><span class="wnum">1</span><b>Подключите только этот привод</b></div>
@@ -608,13 +628,13 @@ li.ok .wnum::before { content: "✓"; } li.ok .wnum { font-size: 0; } li.ok .wnu
               </li>
               <li id="ws2">
                 <div class="wst"><span class="wnum">2</span><b id="wzIdTitle">Назначьте ID</b></div>
-                <p class="note">Запишется ID, скорость 1 Мбит/с, режим «позиция» и полный диапазон угла 0–4095.</p>
+                <p class="note" id="wzIdNote">Запишется ID, скорость 1 Мбит/с, режим «позиция» и полный диапазон угла 0–4095.</p>
                 <div class="row"><button type="button" class="btn pri sm" id="wzId">Записать ID</button></div>
                 <p class="wres" id="wzIdRes"></p>
               </li>
               <li id="ws3">
                 <div class="wst"><span class="wnum">3</span><b>Поставьте вал в середину</b></div>
-                <p class="note">Привод повернёт вал в положение 2048 (180°) и будет его удерживать, пока вы надеваете фланец.</p>
+                <p class="note" id="wzShaftNote">Привод повернёт вал в положение 2048 (180°) и будет его удерживать, пока вы надеваете фланец.</p>
                 <div class="row"><button type="button" class="btn pri sm" id="wzShaft">Повернуть вал в 2048</button></div>
                 <p class="wres" id="wzShaftRes"></p>
               </li>
@@ -1912,10 +1932,30 @@ class SerialLink {
 }
 
 /* ============ транспорт: демо-шина ============ */
+/* ============ типы сервоприводов ============ */
+// Feetech ST3215 (STS) и Dynamixel AX-12A — оба на протоколе Dynamixel 1.0, но таблицы регистров разные
+const AX_BAUDS = [[1, 1000000], [3, 500000], [4, 400000], [7, 250000], [9, 200000], [16, 115200], [34, 57600], [103, 19200], [207, 9600]];
+const AX_MODELS = { 12: "AX-12A", 18: "AX-18A", 300: "AX-12W" };
+const KIND = {
+  sts: { name: "Feetech ST3215", units: 4096, range: 360, max: 4095, center: 2048,
+    reg: { id: 5, baud: 6, torque: 40, goal: 42, speed: 46, pos: 56 } },
+  ax: { name: "Dynamixel AX-12A", units: 1024, range: 300, max: 1023, center: 512,
+    reg: { id: 3, baud: 4, torque: 24, goal: 30, speed: 32, pos: 36 } },
+};
+const unitsPerDeg = (k) => KIND[k].units / KIND[k].range;
+// скорость в «шагах ST3215 в секунду» → единицы скорости AX-12A (0,111 об/мин), 1…1023
+function axSpeedFromDegS(degS) { return Math.max(1, Math.min(1023, Math.round(Math.abs(degS) / 6 / 0.111))); }
+// определить тип привода по регистру 0–1: у AX — номер модели (12 для AX-12A)
+async function detectKind(bus, id) {
+  try { const r = await bus.read(id, 0, 2); const m = u16(r.params, 0); return AX_MODELS[m] ? "ax" : "sts"; }
+  catch (e) { return null; }
+}
+
+/* ============ транспорт: демо-шина ============ */
 class SimLink {
   constructor() {
     this.mode = "sim"; this.baud = 1000000; this.servos = []; this.last = performance.now();
-    for (let id = 1; id <= 7; id++) this.servos.push(this._servo(id, 0, 2048));
+    for (let id = 1; id <= 7; id++) this.servos.push(id === 6 ? this._ax(id, 1, 512) : this._servo(id, 0, 2048));
     this.modules = [{ id: 71, baud: 57600 }, { id: 72, baud: 57600 }];
   }
   _servo(id, baudCode, pos) {
@@ -1925,17 +1965,53 @@ class SimLink {
     r[19] = 44; r[20] = 47; r[21] = 32; r[22] = 32; r[23] = 0; r[24] = 16; r[26] = 1; r[27] = 1;
     r[28] = 0xf4; r[29] = 0x01; r[30] = 1; r[33] = 0; r[34] = 20; r[35] = 200; r[36] = 80; r[37] = 10; r[39] = 200;
     r[55] = 1;
-    const s = { regs: r, pos, spd: 0 };
+    const s = { kind: "sts", regs: r, pos, spd: 0 };
     r[42] = pos & 0xff; r[43] = pos >> 8;
     return s;
   }
-  async open(baud) { this.baud = baud; log("Демо-шина готова. Приводы манипулятора ID 1–7 на 1 Мбит/с, модули моторов контроллера «Кибернетический» ID 71 и 72 на 57 600."); }
+  _ax(id, baudCode, pos) {
+    const r = new Uint8Array(50);
+    r[0] = 12; r[1] = 0; r[2] = 24; r[3] = id; r[4] = baudCode; r[5] = 250;
+    r[6] = 0; r[7] = 0; r[8] = 0xff; r[9] = 0x03; r[11] = 70; r[12] = 60; r[13] = 140; r[14] = 0xff; r[15] = 0x03;
+    r[16] = 2; r[17] = 36; r[18] = 36; r[26] = 1; r[27] = 1; r[28] = 32; r[29] = 32;
+    r[30] = pos & 0xff; r[31] = pos >> 8; r[34] = 0xff; r[35] = 0x03; r[48] = 32;
+    return { kind: "ax", regs: r, pos, spd: 0 };
+  }
+  setKind6(kind) { // демо: какой привод стоит на ID 6
+    const i = this.servos.findIndex((x) => this.sid(x) === 6);
+    if (i < 0) return;
+    if (this.servos[i].kind === kind) return;
+    this.servos[i] = kind === "ax" ? this._ax(6, 1, 512) : this._servo(6, 0, 2048);
+  }
+  sid(s) { return s.kind === "ax" ? s.regs[3] : s.regs[5]; }
+  sbaud(s) { return s.kind === "ax" ? Math.round(2000000 / (s.regs[4] + 1)) : BAUDS[s.regs[6]][1]; }
+  onBus(s) { return Math.abs(this.sbaud(s) - this.baud) / this.baud < 0.03; }
+  async open(baud) { this.baud = baud; log("Демо-шина готова. Приводы манипулятора ID 1–7 на 1 Мбит/с (ID 6 — тот сервопривод, что выбран для сустава 6: по умолчанию Dynamixel AX-12A), модули моторов контроллера «Кибернетический» ID 71 и 72 на 57 600."); }
   async close() {}
   async setBaud(b) { this.baud = b; }
   _tick() {
     const now = performance.now(), dt = Math.min(0.2, (now - this.last) / 1000); this.last = now;
     for (const s of this.servos) {
-      const r = s.regs, torque = r[40] === 1, mode = r[33];
+      const r = s.regs;
+      if (s.kind === "ax") {
+        const torque = r[24] === 1, wheel = u16(r, 6) === 0 && u16(r, 8) === 0;
+        let v = 0; // ед. положения в секунду
+        const spdRaw = u16(r, 32), degS = (spdRaw & 0x3ff) * 0.111 * 6;
+        if (torque && !wheel) {
+          const goal = u16(r, 30), spd = (spdRaw & 0x3ff ? degS : 684) * 1024 / 300;
+          const d = goal - s.pos, step = spd * dt;
+          if (Math.abs(d) <= step) { v = d / dt || 0; s.pos = goal; } else { v = Math.sign(d) * spd; s.pos += Math.sign(d) * step; }
+        } else if (torque && wheel) {
+          v = (spdRaw & 0x400 ? -1 : 1) * degS * 1024 / 300; s.pos = Math.max(0, Math.min(1023, s.pos + v * dt));
+        }
+        const p = Math.round(s.pos) & 0x3ff; r[36] = p & 0xff; r[37] = p >> 8;
+        const sv = Math.min(1023, Math.round(Math.abs(v) * 300 / 1024 / 6 / 0.111)) | (v < 0 ? 0x400 : 0); r[38] = sv & 0xff; r[39] = sv >> 8;
+        const load = torque ? Math.min(1000, Math.abs(v) / 2 + 40 + Math.random() * 15) : 0;
+        const lv = (Math.round(load) & 0x3ff) | (v < 0 ? 0x400 : 0); r[40] = lv & 0xff; r[41] = lv >> 8;
+        r[42] = 110 + Math.round(Math.random()); r[43] = 34 + (Math.random() < 0.1 ? 1 : 0); r[46] = Math.abs(v) > 1 ? 1 : 0;
+        continue;
+      }
+      const torque = r[40] === 1, mode = r[33];
       let v = 0;
       if (torque && mode === 0) {
         const goal = sm16(u16(r, 42)), spd = u16(r, 46) || 3400;
@@ -1965,30 +2041,31 @@ class SimLink {
     if (ins === 0x83) {
       const a = prm[0], n = prm[1];
       for (let k = 2; k + n < prm.length + 1; k += n + 1) {
-        const s = this.servos.find((x) => x.regs[5] === prm[k] && BAUDS[x.regs[6]][1] === this.baud);
-        if (s) for (let j = 0; j < n; j++) if (a + j < 71) s.regs[a + j] = prm[k + 1 + j];
+        const s = this.servos.find((x) => this.sid(x) === prm[k] && this.onBus(x));
+        if (s) for (let j = 0; j < n; j++) if (a + j < s.regs.length) s.regs[a + j] = prm[k + 1 + j];
       }
       return out;
     }
     for (const m of this.modules) if (m.id === id && m.baud === this.baud && ins === 1) out.push(...this._reply(id, 0, []));
     for (const s of this.servos) {
-      const r = s.regs, sid = r[5], sb = BAUDS[r[6]][1];
-      if (sb !== this.baud || (sid !== id && id !== 0xfe)) continue;
+      const r = s.regs, sid = this.sid(s), ax = s.kind === "ax";
+      if (!this.onBus(s) || (sid !== id && id !== 0xfe)) continue;
       const reply = id !== 0xfe;
       if (ins === 1) { if (reply) out.push(...this._reply(sid, 0, [])); }
-      else if (ins === 2) { const [a, n] = prm; if (reply) out.push(...this._reply(sid, 0, Array.from(r.slice(a, a + n)))); }
+      else if (ins === 2) { const [a, n] = prm; if (reply) out.push(...this._reply(sid, 0, Array.from({ length: n }, (_, k) => r[a + k] || 0))); }
       else if (ins === 3) {
         const a = prm[0], data = prm.slice(1);
-        const willReply = reply && r[8] === 1;
+        const willReply = reply && (ax ? r[16] >= 2 : r[8] === 1);
         let newBaud = null;
         data.forEach((v, k) => {
           const ad = a + k;
-          if (ad === 40 && v === 128) { r[40] = 0; const cur = Math.round(s.pos); s.pos = 2048; r[42] = 0; r[43] = 8; const off = enc16(sm16(u16(r, 31), 11) + (cur - 2048), 11); r[31] = off[0]; r[32] = off[1]; return; }
-          if (ad === 6) { newBaud = v; return; }
-          if (ad < 71) r[ad] = v;
+          if (!ax && ad === 40 && v === 128) { r[40] = 0; const cur = Math.round(s.pos); s.pos = 2048; r[42] = 0; r[43] = 8; const off = enc16(sm16(u16(r, 31), 11) + (cur - 2048), 11); r[31] = off[0]; r[32] = off[1]; return; }
+          if (ad === (ax ? 4 : 6)) { newBaud = v; return; }
+          if (ax && ad >= 36 && ad <= 46) return; // только чтение
+          if (ad < r.length) r[ad] = v;
         });
-        if (willReply) out.push(...this._reply(id, 0, []));
-        if (newBaud !== null) r[6] = newBaud;
+        if (willReply) out.push(...this._reply(sid, 0, []));
+        if (newBaud !== null) r[ax ? 4 : 6] = newBaud;
       }
     }
     return out;
@@ -2119,12 +2196,12 @@ $("#logPk").onchange = (e) => { if (S.bus) S.bus.showPk = e.target.checked; };
 /* ============ поиск ============ */
 async function identify(id, baud) {
   const isModule = MODULE_IDS.includes(id) && baud === 57600;
-  const s = { id, baud, kind: isModule ? "module" : "servo", fw: "", model: "" };
+  const s = { id, baud, kind: isModule ? "module" : "servo", type: "sts", fw: "", model: "" };
   if (!isModule) {
     try {
-      const r = await S.bus.read(id, 0, 5);
-      s.fw = `${r.params[0]}.${r.params[1]}`;
-      s.model = `${r.params[3]}.${r.params[4]}`;
+      const r = await S.bus.read(id, 0, 5), m = u16(r.params, 0);
+      if (AX_MODELS[m]) { s.type = "ax"; s.fw = String(r.params[2]); s.model = AX_MODELS[m]; }
+      else { s.fw = `${r.params[0]}.${r.params[1]}`; s.model = `${r.params[3]}.${r.params[4]}`; }
     } catch (e) { s.fw = "?"; }
   }
   return s;
@@ -2141,7 +2218,7 @@ function renderList() {
   for (const s of S.servos) {
     const b = document.createElement("button"); b.type = "button"; b.className = "item";
     b.setAttribute("aria-current", String(S.sel === s));
-    const meta = s.kind === "module" ? "модуль моторов контроллера" : `прошивка ${s.fw || "?"} · версия ${s.model || "?"}`;
+    const meta = s.kind === "module" ? "модуль моторов контроллера" : s.type === "ax" ? `Dynamixel ${s.model} · прошивка ${s.fw || "?"}` : `Feetech · прошивка ${s.fw || "?"} · версия ${s.model || "?"}`;
     b.innerHTML = `<span class="id">${s.id}</span><span><span>${fmtBaud(s.baud)}</span><br><span class="meta">${meta}</span></span><span class="tag">${s.kind === "module" ? "не привод" : "привод"}</span>`;
     b.onclick = () => select(s);
     el.appendChild(b);
@@ -2200,7 +2277,8 @@ async function select(s) {
   try { await S.bus.setBaud(s.baud); } catch (e) { log(e.message, "er"); }
   $("#wsTitle").innerHTML = s.kind === "module"
     ? `Модуль моторов контроллера «Кибернетический» <small>ID ${s.id} · ${fmtBaud(s.baud)}</small>`
-    : `Привод ID ${s.id} <small>${fmtBaud(s.baud)} · прошивка ${s.fw || "?"}</small>`;
+    : `Привод ID ${s.id} <small>${s.type === "ax" ? "Dynamixel " + s.model : "Feetech ST3215"} · ${fmtBaud(s.baud)} · прошивка ${s.fw || "?"}</small>`;
+  if (s.kind === "servo") applyKindUi();
   updateButtons();
   if (s.kind === "module") { log(`ID ${s.id} — модуль моторов STM8 контроллера «Кибернетический» (Ardu8), он не сервопривод. Его настраивают регистрами из описания контроллера.`); return; }
   try { await loadEeprom(); } catch (e) { log(e.message, "er"); }
@@ -2211,21 +2289,49 @@ function setWsEnabled(on) {
   if (on) refreshSaveBar();
 }
 
+/* ============ тип выбранного привода ============ */
+const SK = () => (S.sel && S.sel.type) || "sts";
+const isAX = () => SK() === "ax";
+const u2deg = (u) => u * KIND[SK()].range / KIND[SK()].units;
+const deg2u = (d) => Math.max(0, Math.min(KIND[SK()].max, Math.round(d * KIND[SK()].units / KIND[SK()].range)));
+// подписи и доступные функции зависят от типа привода
+function applyKindUi() {
+  const ax = isAX(), K = KIND[SK()];
+  $("#goalRange").max = K.max; $("#goalNum").max = K.max;
+  const c = document.querySelector('[data-deg="180"]'); if (c) c.textContent = ax ? "150° (центр)" : "180° (центр)";
+  const sp = $("#mvSpeed").parentElement.firstChild; sp.textContent = ax ? "Скорость, °/с " : "Скорость, шаг/с ";
+  $("#mvSpeed").max = ax ? 680 : 4000;
+  if (applyKindUi.last !== SK()) $("#mvSpeed").value = ax ? 150 : 1500;
+  applyKindUi.last = SK();
+  $("#mvAcc").disabled = ax || !S.link;
+  $("#mvAcc").parentElement.hidden = ax;
+  $("#posBlock").querySelector("p.note").textContent = ax
+    ? "AX-12A: 1024 единицы на 300°, 512 — середина (150°). Оранжевая метка на круге — цель, её можно тянуть мышью."
+    : "4096 шагов на оборот, 2048 — середина. Оранжевая метка на круге — цель, её можно тянуть мышью.";
+  $("#wheelRange").min = ax ? -1023 : -3400; $("#wheelRange").max = ax ? 1023 : 3400; $("#wheelRange").step = ax ? 1 : 10;
+  $("#wheelNum").min = ax ? -1023 : -3400; $("#wheelNum").max = ax ? 1023 : 3400;
+  document.querySelectorAll('[data-m="2"],[data-m="3"]').forEach((x) => x.hidden = ax);
+  $("#btnCalib").closest(".block").hidden = ax;
+  setGoal(K.center, true);
+}
+
 /* ============ телеметрия ============ */
-const TELE = [["pos", "Положение"], ["deg", "Угол"], ["spd", "Скорость, шаг/с"], ["load", "Нагрузка"], ["volt", "Напряжение"], ["temp", "Температура"], ["cur", "Ток"], ["state", "Состояние"]];
+const TELE = [["pos", "Положение"], ["deg", "Угол"], ["spd", "Скорость"], ["load", "Нагрузка"], ["volt", "Напряжение"], ["temp", "Температура"], ["cur", "Ток"], ["state", "Состояние"]];
 $("#tele").innerHTML = TELE.map(([k, t]) => `<div><span>${t}</span><b id="t_${k}">—</b></div>`).join("");
+const ERR_AX = [[0, "напряжение"], [1, "предел угла"], [2, "перегрев"], [3, "диапазон"], [4, "контр. сумма"], [5, "перегрузка"], [6, "команда"]];
+const errTextK = (e) => (isAX() ? ERR_AX : ERR_BITS).filter(([b]) => e & (1 << b)).map(([, t]) => t);
 function renderTele() {
   const t = S.tele;
   const set = (k, v, bad) => { const el = $("#t_" + k); el.textContent = v; el.classList.toggle("bad", !!bad); };
   if (!t) { TELE.forEach(([k]) => set(k, "—")); drawDial(); return; }
   set("pos", t.pos);
-  set("deg", nf1(stepsToDeg(t.pos)) + "°");
-  set("spd", t.spd);
+  set("deg", nf1(u2deg(t.pos)) + "°");
+  set("spd", t.spd + (isAX() ? " ед." : " шаг/с"));
   set("load", nf1(t.load / 10) + " %", Math.abs(t.load) > 800);
   set("volt", nf1(t.volt / 10) + " В", t.err & 1);
   set("temp", t.temp + " °C", t.err & 4);
-  set("cur", Math.round(t.cur * 6.5) + " мА", t.err & 8);
-  const e = errText(t.err);
+  set("cur", t.cur === null ? "—" : Math.round(t.cur * 6.5) + " мА", !isAX() && t.err & 8);
+  const e = errTextK(t.err);
   set("state", e.length ? e.join(", ") : (t.moving ? "движется" : t.torque ? "держит" : "свободен"), e.length);
   const fl = $("#wsFlags"); fl.innerHTML = "";
   const pill = (cls, txt) => { const p = document.createElement("span"); p.className = "pill " + cls; p.textContent = txt; fl.appendChild(p); };
@@ -2236,13 +2342,23 @@ function renderTele() {
 async function pollOnce() {
   const s = S.sel;
   if (!S.bus || !s || s.kind !== "servo") return;
-  const r = await S.bus.read(s.id, 40, 31);
-  const p = r.params, o = (a) => a - 40;
-  S.tele = {
-    torque: p[o(40)] === 1, acc: p[o(41)], goal: sm16(u16(p, o(42))), pos: sm16(u16(p, o(56))), spd: sm16(u16(p, o(58))),
-    load: sm16(u16(p, o(60)), 10), volt: p[o(62)], temp: p[o(63)], err: p[o(65)] | r.err, moving: p[o(66)], cur: u16(p, o(69)),
-  };
-  if (S.eep && S.eep[33] !== undefined) setModeUi(S.eep[33]);
+  if (s.type === "ax") {
+    const r = await S.bus.read(s.id, 24, 24);
+    const p = r.params, o = (a) => a - 24;
+    S.tele = {
+      torque: p[o(24)] === 1, goal: u16(p, o(30)), pos: u16(p, o(36)), spd: sm16(u16(p, o(38)), 10),
+      load: sm16(u16(p, o(40)), 10), volt: p[o(42)], temp: p[o(43)], err: r.err, moving: p[o(46)], cur: null,
+    };
+    if (S.eep && S.eep[6] !== undefined) setModeUi(S.eep[6] === 0 && S.eep[8] === 0 ? 1 : 0);
+  } else {
+    const r = await S.bus.read(s.id, 40, 31);
+    const p = r.params, o = (a) => a - 40;
+    S.tele = {
+      torque: p[o(40)] === 1, acc: p[o(41)], goal: sm16(u16(p, o(42))), pos: sm16(u16(p, o(56))), spd: sm16(u16(p, o(58))),
+      load: sm16(u16(p, o(60)), 10), volt: p[o(62)], temp: p[o(63)], err: p[o(65)] | r.err, moving: p[o(66)], cur: u16(p, o(69)),
+    };
+    if (S.eep && S.eep[33] !== undefined) setModeUi(S.eep[33]);
+  }
   renderTele();
 }
 let pollCount = 0, pollStamp = performance.now();
@@ -2269,21 +2385,25 @@ const C = 120, R = 98;
 function pt(deg, r) { const a = (deg - 180) * Math.PI / 180; return [C + r * Math.sin(a), C - r * Math.cos(a)]; }
 function drawDial() {
   let g = `<circle cx="${C}" cy="${C}" r="${R}" fill="var(--bg)" stroke="var(--line)" stroke-width="1.5"/>`;
+  if (isAX()) { // недоступный сектор 300–360°
+    const [x1, y1] = pt(300, R), [x2, y2] = pt(360, R);
+    g += `<path d="M${C},${C} L${x1},${y1} A${R},${R} 0 0 1 ${x2},${y2} Z" fill="var(--soft)"/>`;
+  }
   for (let d = 0; d < 360; d += 15) {
     const major = d % 90 === 0, [x1, y1] = pt(d, R), [x2, y2] = pt(d, R - (major ? 12 : 6));
     g += `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="var(--muted)" stroke-width="${major ? 2 : 1}"/>`;
     if (major) { const [tx, ty] = pt(d, R - 24); g += `<text x="${tx}" y="${ty + 4}" text-anchor="middle" font-size="11" fill="var(--muted)">${d}°</text>`; }
   }
   const t = S.tele;
-  const gd = stepsToDeg(S.goal);
+  const gd = u2deg(S.goal);
   const [gx, gy] = pt(gd, R);
   g += `<circle cx="${gx}" cy="${gy}" r="7" fill="var(--goal)" stroke="var(--panel)" stroke-width="2"/>`;
   if (t) {
-    const d = stepsToDeg(t.pos), [nx, ny] = pt(d, R - 16);
+    const d = u2deg(t.pos), [nx, ny] = pt(d, R - 16);
     g += `<line x1="${C}" y1="${C}" x2="${nx}" y2="${ny}" stroke="var(--accent)" stroke-width="4" stroke-linecap="round"/>`;
     g += `<circle cx="${C}" cy="${C}" r="7" fill="var(--accent)"/>`;
     g += `<text x="${C}" y="${C + 36}" text-anchor="middle" font-size="20" font-weight="600" fill="var(--ink)">${nf1(d)}°</text>`;
-    g += `<text x="${C}" y="${C + 52}" text-anchor="middle" font-size="11" fill="var(--muted)">${t.pos} шаг</text>`;
+    g += `<text x="${C}" y="${C + 52}" text-anchor="middle" font-size="11" fill="var(--muted)">${t.pos} ${isAX() ? "ед." : "шаг"}</text>`;
   } else {
     g += `<circle cx="${C}" cy="${C}" r="5" fill="var(--muted)"/>`;
     g += `<text x="${C}" y="${C + 36}" text-anchor="middle" font-size="12" fill="var(--muted)">нет данных</text>`;
@@ -2296,7 +2416,8 @@ function dialToGoal(ev) {
   const x = (ev.clientX - rc.left) / rc.width * 240 - C, y = (ev.clientY - rc.top) / rc.height * 240 - C;
   let a = Math.atan2(x, -y) * 180 / Math.PI; // 0 сверху, по часовой
   let deg = (a + 180 + 360) % 360;
-  setGoal(degToSteps(deg), true);
+  if (isAX() && deg > 300) deg = deg > 330 ? 0 : 300;
+  setGoal(deg2u(deg), true);
 }
 dial.addEventListener("pointerdown", (e) => { if (!S.sel || S.sel.kind !== "servo" || !S.link) return; dragging = true; dial.setPointerCapture(e.pointerId); dialToGoal(e); });
 dial.addEventListener("pointermove", (e) => { if (dragging) dialToGoal(e); });
@@ -2305,38 +2426,43 @@ dial.addEventListener("pointerup", () => { if (dragging) { dragging = false; mov
 /* ============ управление ============ */
 let liveTimer = 0;
 function setGoal(v, fromDrag) {
-  S.goal = Math.max(0, Math.min(4095, v | 0));
+  S.goal = Math.max(0, Math.min(KIND[SK()].max, v | 0));
   $("#goalRange").value = S.goal; $("#goalNum").value = S.goal;
-  $("#goalDeg").textContent = `цель ${nf1(stepsToDeg(S.goal))}°`;
+  $("#goalDeg").textContent = `цель ${nf1(u2deg(S.goal))}°`;
   drawDial();
   if ($("#liveMove").checked && !fromDrag) { clearTimeout(liveTimer); liveTimer = setTimeout(move, 60); }
 }
 $("#goalRange").oninput = (e) => setGoal(+e.target.value);
 $("#goalNum").onchange = (e) => setGoal(+e.target.value);
-document.querySelectorAll("[data-deg]").forEach((b) => b.onclick = () => { setGoal(b.dataset.deg === "180" ? 2048 : degToSteps(+b.dataset.deg)); if (!$("#liveMove").checked) move(); });
+document.querySelectorAll("[data-deg]").forEach((b) => b.onclick = () => { setGoal(b.dataset.deg === "180" ? KIND[SK()].center : deg2u(+b.dataset.deg)); if (!$("#liveMove").checked) move(); });
 $("#btnMove").onclick = () => move();
 async function move() {
   const s = S.sel; if (!S.bus || !s) return;
-  const spd = Math.max(0, Math.min(4000, +$("#mvSpeed").value | 0)), acc = Math.max(0, Math.min(254, +$("#mvAcc").value | 0));
-  const g = enc16(S.goal), v = enc16(spd);
   try {
+    if (s.type === "ax") {
+      const v = axSpeedFromDegS(+$("#mvSpeed").value || 150);
+      await S.bus.write(s.id, 30, [S.goal & 0xff, S.goal >> 8, v & 0xff, v >> 8]);
+      if (S.tele && !S.tele.torque) await S.bus.write(s.id, 24, [1]);
+      return;
+    }
+    const spd = Math.max(0, Math.min(4000, +$("#mvSpeed").value | 0)), acc = Math.max(0, Math.min(254, +$("#mvAcc").value | 0));
+    const g = enc16(S.goal), v = enc16(spd);
     await S.bus.write(s.id, 41, [acc, g[0], g[1], 0, 0, v[0], v[1]]);
     if (S.tele && !S.tele.torque) await S.bus.write(s.id, 40, [1]);
   } catch (e) { log(e.message, "er"); }
 }
 $("#btnHold").onclick = async () => {
-  const s = S.sel;
+  const s = S.sel, R2 = KIND[SK()].reg;
   try {
-    const r = await S.bus.read(s.id, 56, 2);
-    const pos = sm16(u16(r.params, 0));
-    const p = enc16(pos);
-    await S.bus.write(s.id, 42, p);
-    await S.bus.write(s.id, 40, [1]);
+    const r = await S.bus.read(s.id, R2.pos, 2);
+    const pos = s.type === "ax" ? u16(r.params, 0) : sm16(u16(r.params, 0));
+    await S.bus.write(s.id, R2.goal, s.type === "ax" ? [pos & 0xff, pos >> 8] : enc16(pos));
+    await S.bus.write(s.id, R2.torque, [1]);
     setGoal(pos, true);
-    log(`ID ${s.id}: удерживает ${pos} шаг`);
+    log(`ID ${s.id}: удерживает ${pos} ${s.type === "ax" ? "ед." : "шаг"}`);
   } catch (e) { log(e.message, "er"); }
 };
-$("#btnRelease").onclick = async () => { try { await S.bus.write(S.sel.id, 40, [0]); log(`ID ${S.sel.id}: вал отпущен`); } catch (e) { log(e.message, "er"); } };
+$("#btnRelease").onclick = async () => { try { await S.bus.write(S.sel.id, KIND[SK()].reg.torque, [0]); log(`ID ${S.sel.id}: вал отпущен`); } catch (e) { log(e.message, "er"); } };
 
 function setModeUi(m) {
   document.querySelectorAll("[data-m]").forEach((b) => b.setAttribute("aria-pressed", String(+b.dataset.m === m)));
@@ -2345,6 +2471,16 @@ function setModeUi(m) {
 document.querySelectorAll("[data-m]").forEach((b) => b.onclick = async () => {
   const m = +b.dataset.m, s = S.sel;
   try {
+    if (s.type === "ax") {
+      if (m > 1) return;
+      await S.bus.write(s.id, 24, [0]);
+      // AX-12A: режим колеса — оба предела угла равны 0
+      await S.bus.write(s.id, 6, m === 1 ? [0, 0, 0, 0] : [0, 0, 0xff, 0x03]);
+      if (S.eep) { S.eep[6] = S.eepOrig[6] = 0; S.eep[8] = S.eepOrig[8] = m === 1 ? 0 : 1023; renderSettings(); }
+      setModeUi(m);
+      log(`ID ${s.id}: режим ${m ? "колесо" : "позиция"}, момент выключен`);
+      return;
+    }
     await S.bus.write(s.id, 40, [0]);
     await writeEeprom(s.id, [[33, [m]]]);
     if (S.eep) { S.eep[33] = m; S.eepOrig[33] = m; renderSettings(); }
@@ -2352,12 +2488,19 @@ document.querySelectorAll("[data-m]").forEach((b) => b.onclick = async () => {
     log(`ID ${s.id}: режим ${["позиция", "колесо", "ШИМ", "шаговый"][m]}, момент выключен`);
   } catch (e) { log(e.message, "er"); }
 });
-function setWheel(v) { v = Math.max(-3400, Math.min(3400, v | 0)); $("#wheelRange").value = v; $("#wheelNum").value = v; }
+function setWheel(v) { const L = isAX() ? 1023 : 3400; v = Math.max(-L, Math.min(L, v | 0)); $("#wheelRange").value = v; $("#wheelNum").value = v; }
 $("#wheelRange").oninput = (e) => setWheel(+e.target.value);
 $("#wheelNum").onchange = (e) => setWheel(+e.target.value);
 async function wheelGo(v) {
-  const s = S.sel, acc = Math.max(0, Math.min(254, +$("#mvAcc").value | 0)), e = enc16(v);
+  const s = S.sel;
   try {
+    if (s.type === "ax") {
+      const w = (Math.min(1023, Math.abs(v)) | (v < 0 ? 0x400 : 0));
+      await S.bus.write(s.id, 32, [w & 0xff, w >> 8]);
+      await S.bus.write(s.id, 24, [1]);
+      return;
+    }
+    const acc = Math.max(0, Math.min(254, +$("#mvAcc").value | 0)), e = enc16(v);
     await S.bus.write(s.id, 41, [acc]);
     await S.bus.write(s.id, 46, e);
     await S.bus.write(s.id, 40, [1]);
@@ -2370,6 +2513,7 @@ $("#btnCalib").onclick = () => { $("#calibConfirm").hidden = false; };
 $("#btnCalibNo").onclick = () => { $("#calibConfirm").hidden = true; };
 $("#btnCalibYes").onclick = async () => {
   $("#calibConfirm").hidden = true;
+  if (isAX()) return;
   try {
     await S.bus.write(S.sel.id, 40, [128]);
     log(`ID ${S.sel.id}: текущее положение записано как центр (2048)`);
@@ -2385,9 +2529,10 @@ async function writeEeprom(id, list) {
   await S.bus.write(id, 55, [1]);
 }
 const BITOPTS = [[0, "напряжение"], [1, "датчик"], [2, "перегрев"], [3, "ток"], [5, "перегрузка"]];
-const FIELDS = [
-  { g: "Связь", a: 5, n: 1, t: "ID", min: 0, max: 253 },
-  { g: "Связь", a: 6, n: 1, t: "Скорость шины", sel: BAUDS.map(([c, b]) => [c, fmtBaud(b)]) },
+const BITOPTS_AX = [[0, "напряжение"], [1, "предел угла"], [2, "перегрев"], [3, "диапазон"], [4, "контр. сумма"], [5, "перегрузка"], [6, "команда"]];
+const FIELDS_STS = [
+  { g: "Связь", a: 5, n: 1, t: "ID", min: 0, max: 253, role: "id" },
+  { g: "Связь", a: 6, n: 1, t: "Скорость шины", sel: BAUDS.map(([c, b]) => [c, fmtBaud(b)]), role: "baud" },
   { g: "Связь", a: 7, n: 1, t: "Задержка ответа", u: "×2 мкс", min: 0, max: 254 },
   { g: "Связь", a: 8, n: 1, t: "Отвечать на команды", sel: [[0, "только PING/READ"], [1, "на все"]] },
   { g: "Режим и пределы", a: 33, n: 1, t: "Режим", sel: [[0, "позиция"], [1, "колесо"], [2, "ШИМ"], [3, "шаговый"]] },
@@ -2413,36 +2558,54 @@ const FIELDS = [
   { g: "Регулятор", a: 39, n: 1, t: "I скорости", min: 0, max: 254 },
   { g: "Регулятор", a: 24, n: 1, t: "Мин. стартовое усилие", u: "×0,1 %", min: 0, max: 254 },
 ];
+// Dynamixel AX-12A (протокол 1.0): EEPROM 0–23, RAM 24–49
+const FIELDS_AX = [
+  { g: "Связь", a: 3, n: 1, t: "ID", min: 0, max: 253, role: "id" },
+  { g: "Связь", a: 4, n: 1, t: "Скорость шины", sel: AX_BAUDS.map(([c, b]) => [c, fmtBaud(b)]), role: "baud" },
+  { g: "Связь", a: 5, n: 1, t: "Задержка ответа", u: "×2 мкс", min: 0, max: 254 },
+  { g: "Связь", a: 16, n: 1, t: "Отвечать на команды", sel: [[0, "не отвечать"], [1, "только READ"], [2, "на все"]] },
+  { g: "Пределы угла", a: 6, n: 2, t: "Предел CW (мин.)", u: "ед.", min: 0, max: 1023, deg: true },
+  { g: "Пределы угла", a: 8, n: 2, t: "Предел CCW (макс.)", u: "ед.", min: 0, max: 1023, deg: true },
+  { g: "Защита", a: 14, n: 2, t: "Макс. момент", u: "0–1023", min: 0, max: 1023 },
+  { g: "Защита", a: 11, n: 1, t: "Макс. температура", u: "°C", min: 0, max: 99 },
+  { g: "Защита", a: 13, n: 1, t: "Макс. напряжение", u: "×0,1 В", min: 50, max: 250, k: 0.1, ku: "В" },
+  { g: "Защита", a: 12, n: 1, t: "Мин. напряжение", u: "×0,1 В", min: 50, max: 250, k: 0.1, ku: "В" },
+  { g: "Защита", a: 18, n: 1, t: "Снимать момент при ошибке", bits: true },
+  { g: "Защита", a: 17, n: 1, t: "Мигать светодиодом при ошибке", bits: true },
+];
+const curFields = () => (isAX() ? FIELDS_AX : FIELDS_STS);
+const curBits = () => (isAX() ? BITOPTS_AX : BITOPTS);
 function decodeField(f, p) {
   const raw = f.n === 2 ? u16(p, f.a) : p[f.a];
   return f.sign ? sm16(raw, f.sign) : raw;
 }
 async function loadEeprom() {
   const s = S.sel;
-  const r = await S.bus.read(s.id, 0, 40);
+  const r = await S.bus.read(s.id, 0, s.type === "ax" ? 24 : 40);
   S.eep = {}; S.eepOrig = {};
-  for (const f of FIELDS) { const v = decodeField(f, r.params); S.eep[f.a] = v; S.eepOrig[f.a] = v; }
-  setModeUi(S.eep[33]);
+  for (const f of curFields()) { const v = decodeField(f, r.params); S.eep[f.a] = v; S.eepOrig[f.a] = v; }
+  if (s.type === "ax") setModeUi(S.eep[6] === 0 && S.eep[8] === 0 ? 1 : 0); else setModeUi(S.eep[33]);
   renderSettings();
 }
 function hintFor(f, v) {
-  if (f.deg) return `≈ ${nf1(stepsToDeg(v))}°`;
+  if (f.deg) return `≈ ${nf1(u2deg(v))}°`;
   if (f.k) return `= ${(v * f.k).toLocaleString("ru-RU", { maximumFractionDigits: 1 })} ${f.ku}`;
   return f.u || "";
 }
 function renderSettings() {
   const root = $("#sgroups"); root.textContent = "";
   if (!S.eep) { root.innerHTML = `<div class="empty">Выберите привод — параметры прочитаются автоматически.</div>`; refreshSaveBar(); return; }
-  const groups = [...new Set(FIELDS.map((f) => f.g))];
+  const FL = curFields();
+  const groups = [...new Set(FL.map((f) => f.g))];
   for (const g of groups) {
     const fs = document.createElement("fieldset");
     fs.innerHTML = `<legend>${g}</legend>`;
-    for (const f of FIELDS.filter((x) => x.g === g)) {
+    for (const f of FL.filter((x) => x.g === g)) {
       const v = S.eep[f.a], row = document.createElement("div");
       row.className = "fld" + (f.bits ? " bits" : "") + (v !== S.eepOrig[f.a] ? " dirty" : "");
       const idb = "e" + f.a;
       if (f.bits) {
-        row.innerHTML = `<span>${f.t}</span><div class="bitset">${BITOPTS.map(([b, t]) => `<label class="chip"><input type="checkbox" id="${idb}_${b}" data-b="${b}" ${v & (1 << b) ? "checked" : ""}> ${t}</label>`).join("")}</div>`;
+        row.innerHTML = `<span>${f.t}</span><div class="bitset">${curBits().map(([b, t]) => `<label class="chip"><input type="checkbox" id="${idb}_${b}" data-b="${b}" ${v & (1 << b) ? "checked" : ""}> ${t}</label>`).join("")}</div>`;
         row.querySelectorAll("input").forEach((i) => i.onchange = () => {
           let nv = 0; row.querySelectorAll("input").forEach((x) => { if (x.checked) nv |= 1 << +x.dataset.b; });
           S.eep[f.a] = nv; row.classList.toggle("dirty", nv !== S.eepOrig[f.a]); refreshSaveBar();
@@ -2464,43 +2627,49 @@ function renderSettings() {
     }
     root.appendChild(fs);
   }
+  if (isAX()) {
+    const n = document.createElement("p"); n.className = "note";
+    n.textContent = "Dynamixel AX-12A: оба предела угла = 0 — режим колеса. Регистр блокировки EEPROM (47) приложение не трогает: после его включения EEPROM доступна только после выключения питания.";
+    root.appendChild(n);
+  }
   refreshSaveBar();
 }
-function dirtyFields() { return S.eep ? FIELDS.filter((f) => S.eep[f.a] !== S.eepOrig[f.a]) : []; }
+function dirtyFields() { return S.eep ? curFields().filter((f) => S.eep[f.a] !== S.eepOrig[f.a]) : []; }
 function refreshSaveBar() {
   const d = dirtyFields(), on = !!S.link && !!S.sel && S.sel.kind === "servo";
   $("#dirtyInfo").textContent = d.length ? `Изменено: ${d.map((f) => f.t).join(", ")}` : "Изменений нет";
   $("#btnSave").disabled = !on || !d.length; $("#btnUndo").disabled = !on || !d.length;
   $("#btnSave").textContent = d.length ? `Записать ${d.length} в привод` : "Записать в привод";
 }
-$("#btnUndo").onclick = () => { for (const f of FIELDS) S.eep[f.a] = S.eepOrig[f.a]; renderSettings(); };
+$("#btnUndo").onclick = () => { for (const f of curFields()) S.eep[f.a] = S.eepOrig[f.a]; renderSettings(); };
 $("#btnReread").onclick = async () => { try { await loadEeprom(); log("Параметры перечитаны"); } catch (e) { log(e.message, "er"); } };
 $("#btnSave").onclick = async () => {
-  const s = S.sel, d = dirtyFields();
+  const s = S.sel, d = dirtyFields(), ax = s.type === "ax";
   if (!d.length) return;
-  const newId = S.eep[5], newBaudCode = S.eep[6];
+  const FL = curFields(), fId = FL.find((f) => f.role === "id"), fBaud = FL.find((f) => f.role === "baud");
+  const newId = S.eep[fId.a], newBaudCode = S.eep[fBaud.a];
   if (newId !== s.id && S.servos.some((x) => x !== s && x.id === newId && x.baud === s.baud)) { log(`ID ${newId} уже занят на этой скорости`, "er"); return; }
   if (MODULE_IDS.includes(newId)) log(`ID ${newId} занят модулем моторов контроллера «Кибернетический» (на 57 600). Лучше выбрать другой.`, "er");
   stopPoll();
   let curId = s.id;
   try {
-    await S.bus.write(curId, 40, [0]);
-    await S.bus.write(curId, 55, [0]);
+    await S.bus.write(curId, KIND[s.type].reg.torque, [0]);
+    if (!ax) await S.bus.write(curId, 55, [0]);
     for (const f of d) {
-      if (f.a === 5 || f.a === 6) continue;
+      if (f.role) continue;
       const v = S.eep[f.a];
       const data = f.n === 2 ? (f.sign ? enc16(v, f.sign) : [v & 0xff, (v >> 8) & 0xff]) : [v & 0xff];
       await S.bus.write(curId, f.a, data);
     }
-    if (newId !== s.id) { await S.bus.write(curId, 5, [newId]); curId = newId; await sleep(20); }
+    if (newId !== s.id) { await S.bus.write(curId, fId.a, [newId]); curId = newId; await sleep(20); }
     let newBaud = s.baud;
-    if (S.eep[6] !== S.eepOrig[6]) {
-      await S.bus.write(curId, 6, [newBaudCode]);
-      newBaud = BAUDS[newBaudCode][1];
+    if (S.eep[fBaud.a] !== S.eepOrig[fBaud.a]) {
+      await S.bus.write(curId, fBaud.a, [newBaudCode]);
+      newBaud = (ax ? AX_BAUDS : BAUDS).find(([c]) => c === newBaudCode)[1];
       await sleep(30);
       await S.bus.setBaud(newBaud); busBaudSel.value = newBaud;
     }
-    await S.bus.write(curId, 55, [1]);
+    if (!ax) await S.bus.write(curId, 55, [1]);
     const ok = await S.bus.ping(curId);
     if (!ok) throw new Error(`После записи ID ${curId} не отвечает на ${fmtBaud(newBaud)}. Запустите поиск.`);
     log(`ID ${s.id}: записано ${d.length} параметр(ов)` + (curId !== s.id ? `, новый ID ${curId}` : "") + (newBaud !== s.baud ? `, скорость ${fmtBaud(newBaud)}` : ""));
@@ -2513,16 +2682,21 @@ $("#btnSave").onclick = async () => {
 /* ============ таблица регистров ============ */
 const REG_NAMES = { 0: "Версия прошивки (старш.)", 1: "Версия прошивки (младш.)", 3: "Версия привода (старш.)", 4: "Версия привода (младш.)", 5: "ID", 6: "Скорость шины (код)", 7: "Задержка ответа", 8: "Уровень ответа", 9: "Мин. угол", 11: "Макс. угол", 13: "Макс. температура", 14: "Макс. напряжение", 15: "Мин. напряжение", 16: "Макс. момент", 18: "Настройки (фаза)", 19: "Снятие момента при ошибке", 20: "Светодиод при ошибке", 21: "P", 22: "D", 23: "I", 24: "Мин. стартовое усилие", 26: "Мёртвая зона CW", 27: "Мёртвая зона CCW", 28: "Ток защиты", 30: "Угловое разрешение", 31: "Смещение нуля", 33: "Режим", 34: "Момент после защиты", 35: "Время защиты", 36: "Порог перегрузки", 37: "P скорости", 38: "Время защиты по току", 39: "I скорости", 40: "Момент вкл.", 41: "Ускорение", 42: "Цель: положение", 44: "Цель: время", 46: "Цель: скорость", 48: "Ограничение момента", 55: "Блокировка EEPROM", 56: "Положение", 58: "Скорость", 60: "Нагрузка", 62: "Напряжение", 63: "Температура", 64: "Флаг REG_WRITE", 65: "Ошибки", 66: "Движение", 69: "Ток" };
 const WORDS = new Set([9, 11, 16, 24, 28, 31, 42, 44, 46, 48, 56, 58, 60, 69]);
+const REG_NAMES_AX = { 0: "Номер модели", 2: "Версия прошивки", 3: "ID", 4: "Скорость шины (код)", 5: "Задержка ответа", 6: "Предел CW", 8: "Предел CCW", 11: "Макс. температура", 12: "Мин. напряжение", 13: "Макс. напряжение", 14: "Макс. момент", 16: "Уровень ответа", 17: "Светодиод при ошибке", 18: "Снятие момента при ошибке", 24: "Момент вкл.", 25: "Светодиод", 26: "Зазор CW", 27: "Зазор CCW", 28: "Наклон CW", 29: "Наклон CCW", 30: "Цель: положение", 32: "Цель: скорость", 34: "Ограничение момента", 36: "Положение", 38: "Скорость", 40: "Нагрузка", 42: "Напряжение", 43: "Температура", 44: "Флаг REG_WRITE", 46: "Движение", 47: "Блокировка EEPROM", 48: "Punch" };
+const WORDS_AX = new Set([0, 6, 8, 14, 30, 32, 34, 36, 38, 40, 48]);
 $("#btnDump").onclick = async () => {
   const s = S.sel; if (!s) return;
   try {
-    const a = await S.bus.read(s.id, 0, 40), b = await S.bus.read(s.id, 40, 31);
-    const all = new Uint8Array(71); all.set(a.params, 0); all.set(b.params, 40);
+    const ax = s.type === "ax", N = ax ? 50 : 71;
+    const all = new Uint8Array(N);
+    if (ax) { const a = await S.bus.read(s.id, 0, 50); all.set(a.params, 0); }
+    else { const a = await S.bus.read(s.id, 0, 40), b = await S.bus.read(s.id, 40, 31); all.set(a.params, 0); all.set(b.params, 40); }
+    const NM = ax ? REG_NAMES_AX : REG_NAMES, WD = ax ? WORDS_AX : WORDS, ram = ax ? 24 : 40;
     let h = `<tr><th>Адрес</th><th>Регистр</th><th>Байты</th><th>Значение</th></tr>`;
-    for (let i = 0; i < 71; i++) {
-      if (!(i in REG_NAMES)) continue;
-      const w = WORDS.has(i), v = w ? u16(all, i) : all[i];
-      h += `<tr class="${i >= 40 ? "sram" : ""}"><td class="n">${i}</td><td>${REG_NAMES[i]}</td><td class="mono">${hex(all.slice(i, i + (w ? 2 : 1)))}</td><td class="n">${v}</td></tr>`;
+    for (let i = 0; i < N; i++) {
+      if (!(i in NM)) continue;
+      const w = WD.has(i), v = w ? u16(all, i) : all[i];
+      h += `<tr class="${i >= ram ? "sram" : ""}"><td class="n">${i}</td><td>${NM[i]}</td><td class="mono">${hex(all.slice(i, i + (w ? 2 : 1)))}</td><td class="n">${v}</td></tr>`;
     }
     $("#regTable").innerHTML = h;
   } catch (e) { log(e.message, "er"); }
@@ -2682,7 +2856,13 @@ const KIN = (() => {
   return { v, m3, setup, fk, ik, D2R };
 })();
 
-const defaultCfg = () => ARM_JOINTS.map((j, i) => ({ id: i + 1, zero: 2048, dir: ARM.dir[i], min: j.min, max: j.max }));
+// на месте сустава 6 (ID 6) может стоять Dynamixel AX-12A (по умолчанию) или Feetech ST3215
+const AXJ = 5;
+const defaultCfg = () => ARM_JOINTS.map((j, i) => {
+  const servo = i === AXJ ? "ax" : "sts";
+  const lim = servo === "ax" ? 145 : 180; // AX-12A поворачивается только на 300°
+  return { id: i + 1, servo, zero: KIND[servo].center, dir: ARM.dir[i], min: Math.max(j.min, -lim), max: Math.min(j.max, lim) };
+});
 const A = { cfg: defaultCfg(), target: new Array(NJ).fill(0), actual: new Array(NJ).fill(null), lastSteps: new Array(NJ).fill(null), poses: [], torque: false, playing: false, stop: false, anim: 0, sendTimer: 0, tool: "grip", three: null, hot: -1 };
 const store = {
   get(k, d) { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch (e) { return d; } },
@@ -2704,15 +2884,36 @@ const akey = (k) => `ft.arm.${ARM_TYPE}.${k}`;
 function loadArmState() {
   A.cfg = defaultCfg();
   const c = store.get(akey("cfg"), null);
-  if (Array.isArray(c) && c.length === NJ) A.cfg = c.map((x, i) => Object.assign(defaultCfg()[i], x));
+  if (Array.isArray(c) && c.length === NJ) A.cfg = c.map((x, i) => fixCfg(i, x));
   const p = store.get(akey("poses"), null);
   A.poses = Array.isArray(p) ? p.filter((x) => x && Array.isArray(x.deg) && x.deg.length === NJ) : ARM.poses.map((x) => ({ name: x.name, deg: x.deg.slice() }));
 }
+// настройки до появления выбора привода: сустав 6 становится AX-12A с серединой 512
+function fixCfg(i, x) {
+  const c = Object.assign(defaultCfg()[i], x);
+  if (!x || !x.servo) { c.servo = i === AXJ ? "ax" : "sts"; if (c.servo === "ax") c.zero = 512; }
+  if (!KIND[c.servo] || (i !== AXJ && c.servo !== "sts")) c.servo = "sts";
+  c.zero = Math.max(0, Math.min(KIND[c.servo].max, c.zero | 0));
+  if (c.servo === "ax") { c.min = Math.max(c.min, -145); c.max = Math.min(c.max, 145); }
+  return c;
+}
+const jkind = (i) => (A.cfg[i] && A.cfg[i].servo) || "sts";
+const jK = (i) => KIND[jkind(i)];
+const unitWord = (i) => (jkind(i) === "ax" ? "ед." : "шаг");
 const saveCfg = () => store.set(akey("cfg"), A.cfg);
 const savePoses = () => store.set(akey("poses"), A.poses);
 const clampJ = (i, d) => Math.max(A.cfg[i].min, Math.min(A.cfg[i].max, d));
-const deg2steps = (i, d) => Math.max(0, Math.min(4095, Math.round(A.cfg[i].zero + A.cfg[i].dir * d * 4096 / 360)));
-const steps2deg = (i, s) => A.cfg[i].dir * (s - A.cfg[i].zero) * 360 / 4096;
+const deg2steps = (i, d) => { const K = jK(i); return Math.max(0, Math.min(K.max, Math.round(A.cfg[i].zero + A.cfg[i].dir * d * K.units / K.range))); };
+const steps2deg = (i, s) => { const K = jK(i); return A.cfg[i].dir * (s - A.cfg[i].zero) * K.range / K.units; };
+// отдельные команды для приводов разных типов
+const stsIdx = () => A.cfg.map((c, i) => i).filter((i) => jkind(i) === "sts");
+const axIdx = () => A.cfg.map((c, i) => i).filter((i) => jkind(i) === "ax");
+async function torqueAll(on) {
+  const st = stsIdx(), ax = axIdx();
+  if (st.length) await S.bus.syncWrite(40, 1, st.map((i) => [A.cfg[i].id, [on ? 1 : 0]]));
+  for (const i of ax) await S.bus.write(A.cfg[i].id, 24, [on ? 1 : 0]);
+}
+async function torqueOffJ(i) { await S.bus.write(A.cfg[i].id, jK(i).reg.torque, [0]); }
 const fmtDeg = (d) => (d > 0 ? "+" : "") + d.toLocaleString("ru-RU", { maximumFractionDigits: 1, minimumFractionDigits: 1 }) + "°";
 const armConnected = () => !!S.bus;
 
@@ -2723,7 +2924,7 @@ function renderJoints() {
   ARM_JOINTS.forEach((j, i) => {
     const c = A.cfg[i];
     h += `<div class="jrow" data-j="${i}"><span class="jn">${j.grip ? "С" : i + 1}</span>
-      <span class="jt">${j.name}<small>ID ${c.id} · ${deg2steps(i, A.target[i])} шаг</small></span>
+      <span class="jt">${j.name}<small>${jointMeta(i)}</small></span>
       <input type="range" id="jr${i}" min="${c.min}" max="${c.max}" step="0.5" value="${A.target[i]}" aria-label="${j.name}">
       <input type="number" id="jv${i}" min="${c.min}" max="${c.max}" step="0.5" value="${A.target[i]}" aria-label="${j.name}, градусы">
       <span class="act off" id="ja${i}">—</span></div>`;
@@ -2739,6 +2940,9 @@ function renderJoints() {
   });
   renderActual();
 }
+function jointMeta(i) {
+  return `ID ${A.cfg[i].id}` + (jkind(i) === "ax" ? ` · <span class="ax">AX-12A</span>` : "") + ` · ${deg2steps(i, A.target[i])} ${unitWord(i)}`;
+}
 function updateJointUi(i) {
   const v = Math.round(A.target[i] * 10) / 10;
   const r = $("#jr" + i), n = $("#jv" + i);
@@ -2746,7 +2950,7 @@ function updateJointUi(i) {
   if (n && document.activeElement !== n) n.value = v;
   if (r && document.activeElement === r) n.value = v;
   const sm = r && r.parentElement.querySelector("small");
-  if (sm) sm.textContent = `ID ${A.cfg[i].id} · ${deg2steps(i, A.target[i])} шаг`;
+  if (sm) sm.innerHTML = jointMeta(i);
 }
 function renderActual() {
   for (let i = 0; i < NJ; i++) {
@@ -2776,24 +2980,37 @@ function queueSend() {
 }
 async function sendPose(deg, T) {
   if (!armConnected() || !$("#armLive").checked) return;
-  const items = [];
+  const items = [], axItems = [];
   for (let i = 0; i < NJ; i++) {
     const st = deg2steps(i, deg[i]), from = A.lastSteps[i];
-    let spd = 2000;
-    if (T > 0 && from !== null) spd = Math.max(30, Math.min(3400, Math.ceil(Math.abs(st - from) / T)));
-    const p = enc16(st), v = enc16(spd);
-    items.push([A.cfg[i].id, [40, p[0], p[1], 0, 0, v[0], v[1]]]);
+    if (jkind(i) === "ax") {
+      // AX-12A: регистр 30 — цель, 32 — скорость (0,111 об/мин на единицу)
+      let degS = 176;
+      if (T > 0 && from !== null) degS = Math.max(3, Math.abs(st - from) * 300 / 1024 / T);
+      const v = axSpeedFromDegS(degS);
+      axItems.push([A.cfg[i].id, [st & 0xff, st >> 8, v & 0xff, v >> 8]]);
+    } else {
+      let spd = 2000;
+      if (T > 0 && from !== null) spd = Math.max(30, Math.min(3400, Math.ceil(Math.abs(st - from) / T)));
+      const p = enc16(st), v = enc16(spd);
+      items.push([A.cfg[i].id, [40, p[0], p[1], 0, 0, v[0], v[1]]]);
+    }
     A.lastSteps[i] = st;
   }
   try {
-    await S.bus.syncWrite(41, 7, items);
-    if (!A.torque) { await S.bus.syncWrite(40, 1, A.cfg.map((c) => [c.id, [1]])); A.torque = true; }
+    // регистры 41–47 у AX-12A — это другие регистры (47 — блокировка EEPROM), поэтому AX в эту команду не входит
+    if (items.length) await S.bus.syncWrite(41, 7, items);
+    if (axItems.length) await S.bus.syncWrite(30, 4, axItems);
+    if (!A.torque) { await torqueAll(true); A.torque = true; }
   } catch (e) { log(e.message, "er"); }
 }
 async function readAllSteps() {
   const out = [];
   for (let i = 0; i < NJ; i++) {
-    try { const r = await S.bus.read(A.cfg[i].id, 56, 2); out.push(sm16(u16(r.params, 0))); }
+    try {
+      const ax = jkind(i) === "ax", r = await S.bus.read(A.cfg[i].id, ax ? 36 : 56, 2);
+      out.push(ax ? u16(r.params, 0) : sm16(u16(r.params, 0)));
+    }
     catch (e) { out.push(null); }
   }
   return out;
@@ -2817,25 +3034,26 @@ $("#armHold").onclick = async () => {
   if (!armConnected()) { log("Сначала подключитесь", "er"); return; }
   stopAnim();
   const st = await readActual();
-  const items = [];
+  const items = [], axItems = [];
   st.forEach((s, i) => {
     if (s === null) return;
     A.target[i] = clampJ(i, steps2deg(i, s)); updateJointUi(i);
-    const p = enc16(s); items.push([A.cfg[i].id, [40, p[0], p[1], 0, 0, 0xe8, 0x03]]);
+    if (jkind(i) === "ax") { const v = axSpeedFromDegS(90); axItems.push([A.cfg[i].id, [s & 0xff, s >> 8, v & 0xff, v >> 8]]); }
+    else { const p = enc16(s); items.push([A.cfg[i].id, [40, p[0], p[1], 0, 0, 0xe8, 0x03]]); }
   });
-  if (!items.length) { log("Ни один привод манипулятора не ответил. Проверьте ID в «Настройке суставов».", "er"); return; }
+  if (!items.length && !axItems.length) { log("Ни один привод манипулятора не ответил. Проверьте ID в «Настройке суставов».", "er"); return; }
   try {
-    await S.bus.syncWrite(41, 7, items);
-    await S.bus.syncWrite(40, 1, items.map(([id]) => [id, [1]]));
+    if (items.length) { await S.bus.syncWrite(41, 7, items); await S.bus.syncWrite(40, 1, items.map(([id]) => [id, [1]])); }
+    for (const [id, d] of axItems) { await S.bus.write(id, 30, d); await S.bus.write(id, 24, [1]); }
     A.torque = true;
-    log(`Удерживают: ${items.length} из ${NJ}`);
+    log(`Удерживают: ${items.length + axItems.length} из ${NJ}`);
   } catch (e) { log(e.message, "er"); }
   if (!$("#armFollow").checked) applyModel(A.target);
 };
 $("#armRelease").onclick = async () => {
   if (!armConnected()) { log("Сначала подключитесь", "er"); return; }
   stopAnim(); stopPlay();
-  try { await S.bus.syncWrite(40, 1, A.cfg.map((c) => [c.id, [0]])); A.torque = false; log("Все приводы отпущены"); }
+  try { await torqueAll(false); A.torque = false; log("Все приводы отпущены"); }
   catch (e) { log(e.message, "er"); }
 };
 $("#armHome").onclick = () => goTo(new Array(NJ).fill(0));
@@ -2846,6 +3064,8 @@ function goTo(dest, T) {
   T = T ?? Math.max(0.2, +$("#armTime").value || 1.5);
   dest = dest.map((d, i) => clampJ(i, d));
   const from = A.target.slice(), tok = ++A.anim, t0 = performance.now();
+  // отложенная отправка от ползунка или кнопок не должна перебить цель плавного перехода
+  clearTimeout(A.sendTimer); A.sendTimer = 0;
   sendPose(dest, T);
   return new Promise((res) => {
     const step = () => {
@@ -2943,7 +3163,7 @@ $("#poseImport").onchange = async (e) => {
     if (!Array.isArray(d.poses)) throw new Error("в файле нет списка поз");
     if (d.type && d.type !== ARM_TYPE && ARMS[d.type]) log(`Файл сделан для «${ARMS[d.type].title}», а открыт «${ARM.title}». Позы загружены, проверьте их перед запуском.`, "er");
     A.poses = d.poses.filter((x) => x && Array.isArray(x.deg) && x.deg.length === NJ).map((x) => ({ name: String(x.name || "Поза"), deg: x.deg.map(Number) }));
-    if (Array.isArray(d.cfg) && d.cfg.length === NJ) { A.cfg = d.cfg.map((x, i) => Object.assign(defaultCfg()[i], x)); saveCfg(); renderCfg(); renderJoints(); }
+    if (Array.isArray(d.cfg) && d.cfg.length === NJ) { A.cfg = d.cfg.map((x, i) => fixCfg(i, x)); saveCfg(); syncSimKind(); renderCfg(); renderJoints(); }
     savePoses(); renderPoses();
     log(`Загружено поз: ${A.poses.length}` + (d.cfg ? ", настройка суставов тоже" : ""));
   } catch (er) { log("Не удалось прочитать файл: " + er.message, "er"); }
@@ -2951,12 +3171,16 @@ $("#poseImport").onchange = async (e) => {
 
 /* --- настройка суставов --- */
 function renderCfg() {
-  let h = `<tr><th>Сустав</th><th>ID</th><th>Ноль, шаг</th><th>Инверсия</th><th>Мин, °</th><th>Макс, °</th><th></th></tr>`;
+  let h = `<tr><th>Сустав</th><th>Сервопривод</th><th>ID</th><th>Ноль</th><th>Инверсия</th><th>Мин, °</th><th>Макс, °</th><th></th></tr>`;
   ARM_JOINTS.forEach((j, i) => {
     const c = A.cfg[i];
+    const kindCell = i === AXJ
+      ? `<select id="ck${i}" aria-label="Тип сервопривода сустава ${i + 1}"><option value="ax" ${c.servo === "ax" ? "selected" : ""}>Dynamixel AX-12A</option><option value="sts" ${c.servo === "sts" ? "selected" : ""}>Feetech ST3215</option></select>`
+      : `<span class="kmuted">Feetech ST3215</span>`;
     h += `<tr><td>${j.grip ? "С" : i + 1}. ${j.name}</td>
+      <td>${kindCell}</td>
       <td><input type="number" id="ci${i}" min="0" max="253" value="${c.id}"></td>
-      <td><input type="number" id="cz${i}" min="0" max="4095" value="${c.zero}"></td>
+      <td><input type="number" id="cz${i}" min="0" max="${jK(i).max}" value="${c.zero}" title="${unitWord(i)}"></td>
       <td><label class="chip"><input type="checkbox" id="cd${i}" ${c.dir < 0 ? "checked" : ""}> да</label></td>
       <td><input type="number" id="cn${i}" min="-180" max="180" value="${c.min}"></td>
       <td><input type="number" id="cx${i}" min="-180" max="180" value="${c.max}"></td>
@@ -2967,7 +3191,7 @@ function renderCfg() {
     const upd = () => {
       const c = A.cfg[i];
       c.id = Math.max(0, Math.min(253, +$("#ci" + i).value | 0));
-      c.zero = Math.max(0, Math.min(4095, +$("#cz" + i).value | 0));
+      c.zero = Math.max(0, Math.min(jK(i).max, +$("#cz" + i).value | 0));
       c.dir = $("#cd" + i).checked ? -1 : 1;
       const mn = +$("#cn" + i).value, mx = +$("#cx" + i).value;
       if (Number.isFinite(mn) && Number.isFinite(mx) && mn < mx) { c.min = Math.max(-180, mn); c.max = Math.min(180, mx); }
@@ -2975,26 +3199,44 @@ function renderCfg() {
     };
     ["ci", "cz", "cn", "cx"].forEach((p) => $("#" + p + i).onchange = upd);
     $("#cd" + i).onchange = upd;
+    if (i === AXJ) $("#ck" + i).onchange = (e) => setJointServo(i, e.target.value);
     $("#cs" + i).onclick = async () => {
       if (!armConnected()) { log("Сначала подключитесь", "er"); return; }
       try {
-        const ok = await calibMiddle(A.cfg[i].id);
-        if (!ok) throw new Error(`ID ${A.cfg[i].id} не ответил`);
-        A.cfg[i].zero = 2048; saveCfg(); renderCfg();
+        const z = await calibMiddle(i);
+        if (z === null) throw new Error(`ID ${A.cfg[i].id} не ответил`);
+        A.cfg[i].zero = z; saveCfg(); renderCfg();
         A.target[i] = 0; renderJoints(); applyModel(A.target);
-        log(`${ARM_JOINTS[i].name}: текущее положение записано в привод как середина (2048)`);
+        log(jkind(i) === "ax" ? `${ARM_JOINTS[i].name}: текущее положение (${z} ед.) принято за ноль сустава` : `${ARM_JOINTS[i].name}: текущее положение записано в привод как середина (2048)`);
       } catch (e) { log(e.message, "er"); }
     };
   });
 }
-async function calibMiddle(id) {
+// новый ноль сустава или null. Feetech записывает середину (2048) в EEPROM,
+// у AX-12A смещения нет — запоминаем текущее показание
+async function calibMiddle(i) {
+  const id = A.cfg[i].id;
   try {
-    if (!(await S.bus.ping(id))) return false;
+    if (!(await S.bus.ping(id))) return null;
+    if (jkind(i) === "ax") { const r = await S.bus.read(id, 36, 2); return u16(r.params, 0); }
     await S.bus.write(id, 40, [128]);
     await sleep(60);
     const r = await S.bus.read(id, 56, 2);
-    return Math.abs(sm16(u16(r.params, 0)) - 2048) <= 4;
-  } catch (e) { return false; }
+    return Math.abs(sm16(u16(r.params, 0)) - 2048) <= 4 ? 2048 : null;
+  } catch (e) { return null; }
+}
+// выбор привода сустава 6: настройка, демо-шина, подсказки помощника
+function setJointServo(i, kind) {
+  if (!KIND[kind] || jkind(i) === kind) return;
+  const c = A.cfg[i], j = ARM_JOINTS[i];
+  c.servo = kind; c.zero = KIND[kind].center;
+  if (kind === "ax") { c.min = Math.max(c.min, -145); c.max = Math.min(c.max, 145); }
+  else { c.min = j.min; c.max = j.max; }
+  A.target[i] = clampJ(i, A.target[i]); A.lastSteps[i] = null; A.torque = false;
+  saveCfg(); renderCfg(); renderJoints(); applyModel(A.target);
+  syncSimKind();
+  if (S.view === "wiz") wizRender();
+  log(`${j.name} (ID ${c.id}): сервопривод ${KIND[kind].name}` + (kind === "ax" ? " — 300°, середина 512" : ""));
 }
 $("#cfgZeroAll").onclick = () => { $("#zeroConfirm").hidden = false; };
 $("#zeroNo").onclick = () => { $("#zeroConfirm").hidden = true; };
@@ -3003,13 +3245,14 @@ $("#zeroYes").onclick = async () => {
   if (!armConnected()) { log("Сначала подключитесь", "er"); return; }
   const miss = [];
   for (let i = 0; i < NJ; i++) {
-    if (await calibMiddle(A.cfg[i].id)) { A.cfg[i].zero = 2048; A.target[i] = 0; } else miss.push(A.cfg[i].id);
+    const z = await calibMiddle(i);
+    if (z !== null) { A.cfg[i].zero = z; A.target[i] = 0; } else miss.push(A.cfg[i].id);
   }
   A.torque = false;
   saveCfg(); renderCfg(); renderJoints(); applyModel(A.target);
-  log(miss.length ? `Середины записаны, кроме ID ${miss.join(", ")} (нет ответа)` : "Текущая поза записана во все приводы как середина (2048) — это поза модели");
+  log(miss.length ? `Середины записаны, кроме ID ${miss.join(", ")} (нет ответа)` : "Текущая поза принята за позу модели: Feetech записали середину (2048)" + (axIdx().length ? ", для AX-12A запомнено текущее показание" : ""));
 };
-$("#cfgReset").onclick = () => { A.cfg = defaultCfg(); saveCfg(); renderCfg(); renderJoints(); applyModel(A.target); log("Настройка суставов сброшена"); };
+$("#cfgReset").onclick = () => { const k = A.cfg[AXJ].servo; A.cfg = defaultCfg(); A.cfg[AXJ].servo = "ax"; if (k !== "ax") { A.cfg[AXJ].servo = "ax"; setJointServo(AXJ, k); } saveCfg(); renderCfg(); renderJoints(); applyModel(A.target); log("Настройка суставов сброшена (тип привода сустава 6 сохранён)"); };
 
 
 /* --- управление схватом в пространстве (обратная задача) --- */
@@ -3073,6 +3316,14 @@ function cartApply(pT, RT, quiet) {
   return true;
 }
 function jogStep(kind, sign, dt) {
+  if (kind === "s") { // сустав 6 (ID 6) отдельно: остальные суставы стоят на месте
+    const j = 5, c = A.cfg[j], v = Math.max(c.min, Math.min(c.max, A.target[j] + sign * CT.spd * 0.6 * dt));
+    if (v === A.target[j]) { cartMsg("info", `${ARM_JOINTS[j].name}: предел ${fmtDeg(sign > 0 ? c.max : c.min)}.`); return "end"; }
+    A.target[j] = v; updateJointUi(j);
+    if (!$("#armFollow").checked) applyModel(A.target);
+    queueSend(); cartSync(true); cartRefresh();
+    return true;
+  }
   if (kind === "g") { // схват: 0 — раскрыт, max — сомкнут
     const g = NJ - 1, c = A.cfg[g], v = Math.max(c.min, Math.min(c.max, A.target[g] + sign * CT.spd * 1.2 * dt));
     if (v === A.target[g]) return "end";
@@ -3126,7 +3377,7 @@ document.querySelectorAll(".jb").forEach((b) => {
   ["pointerup", "pointercancel", "lostpointercapture"].forEach((ev) => b.addEventListener(ev, () => { if (CT.jog && CT.jog.btn === b) jogStop(); }));
 });
 window.addEventListener("blur", () => jogStop());
-const KEYJOG = { ArrowUp: "x+", ArrowDown: "x-", ArrowLeft: "y+", ArrowRight: "y-", PageUp: "z+", PageDown: "z-", KeyR: "t+", KeyF: "t-", KeyQ: "r+", KeyE: "r-", KeyO: "g-", KeyC: "g+" };
+const KEYJOG = { ArrowUp: "x+", ArrowDown: "x-", ArrowLeft: "y+", ArrowRight: "y-", PageUp: "z+", PageDown: "z-", KeyR: "t+", KeyF: "t-", KeyQ: "r+", KeyE: "r-", KeyT: "s+", KeyG: "s-", KeyO: "g-", KeyC: "g+" };
 document.addEventListener("keydown", (e) => {
   if (S.view !== "arm" || !KEYJOG[e.code] || e.ctrlKey || e.altKey || e.metaKey) return;
   if (/^(INPUT|SELECT|TEXTAREA)$/.test(document.activeElement && document.activeElement.tagName)) return;
@@ -3148,6 +3399,7 @@ function cartRefresh() {
   const f = KIN.fk(qArm()), u = toUser(f.p), tr = tiltRoll(f.p, f.R);
   $("#cX").textContent = f1(u[0]); $("#cY").textContent = f1(u[1]); $("#cZ").textContent = f1(u[2]);
   $("#cT").textContent = f1(tr.tilt); $("#cR").textContent = f1(tr.roll);
+  $("#cJ6").textContent = f1(A.target[5]);
   { const c = A.cfg[NJ - 1]; $("#cG").textContent = Math.round(100 * (A.target[NJ - 1] - c.min) / ((c.max - c.min) || 1)); }
   if (A.three && A.three.marks) A.three.marks(f.p, CT.jog || CT.anim ? CT.pT : null);
   return { u, tr };
@@ -3156,8 +3408,19 @@ function cartFill() {
   const { u, tr } = cartRefresh();
   $("#cXi").value = Math.round(u[0]); $("#cYi").value = Math.round(u[1]); $("#cZi").value = Math.round(u[2]);
   $("#cTi").value = Math.round(tr.tilt); $("#cRi").value = Math.round(tr.roll);
+  $("#cJ6i").value = Math.round(A.target[5]);
 }
 $("#cartFill").onclick = cartFill;
+// сустав 6 — сразу по вводу угла, плавно, остальные суставы на месте
+$("#cJ6i").onchange = () => {
+  const v = +$("#cJ6i").value;
+  if ($("#cJ6i").value === "" || !Number.isFinite(v)) return;
+  jogStop(); if (A.playing) stopPlay();
+  const d = A.target.slice(); d[5] = clampJ(5, v);
+  if (d[5] !== v) cartMsg("info", `${ARM_JOINTS[5].name}: ограничено пределом ${fmtDeg(d[5])}.`); else cartMsg();
+  $("#cJ6i").value = Math.round(d[5]);
+  goTo(d, Math.max(0.3, Math.abs(d[5] - A.target[5]) / 60)).then(() => { cartSync(true); cartRefresh(); });
+};
 function cartMove(pE, RE) {
   jogStop(); stopAnim(); if (A.playing) stopPlay();
   cartSync(true);
@@ -3469,7 +3732,7 @@ function setView(v) {
     vpHome.after(vp);
     ensureThree().then(() => { if (A.three) { if (W.focused) { A.three.unfocus(); W.focused = false; } A.three.req(); } });
   }
-  if (prev === "wiz" && v !== "wiz" && armConnected() && W.holding) { S.bus.write(A.cfg[W.cur].id, 40, [0]).catch(() => {}); W.holding = false; }
+  if (prev === "wiz" && v !== "wiz" && armConnected() && W.holding) { torqueOffJ(W.cur).catch(() => {}); W.holding = false; }
 }
 function navState() {
   const v = S.view;
@@ -3486,16 +3749,18 @@ async function setArmType(t) {
   if (t === ARM_TYPE && A.cfgLoaded) { navState(); return; }
   if (typeof jogStop === "function") jogStop();
   stopAnim(); if (A.playing) stopPlay();
-  if (W.holding && armConnected()) { try { await S.bus.write(A.cfg[W.cur].id, 40, [0]); } catch (e) {} W.holding = false; }
+  if (W.holding && armConnected()) { try { await torqueOffJ(W.cur); } catch (e) {} W.holding = false; }
   ARM_TYPE = t; ARM = ARMS[t]; ARM_MODEL = ARM.model; ARM_JOINTS = ARM.joints; GRIP = ARM.grip;
   TCP0 = ARM.tcp; KIN.setup(ARM_JOINTS.filter((j) => !j.grip), TCP0);
-  loadArmState(); A.cfgLoaded = true;
+  loadArmState(); A.cfgLoaded = true; syncSimKind();
   A.target = new Array(NJ).fill(0); A.actual.fill(null); A.lastSteps.fill(null);
   CT.pT = null; CT.stamp = "";
   W.st = W.stBy[t]; W.cur = 0; W.found = null;
   ["wzScanRes", "wzIdRes", "wzShaftRes", "wzHornRes"].forEach((r) => wizRes(r));
   $("#hArm").innerHTML = `${ARM.title} <small>6 суставов + схват · ${ARM_MODEL}</small>`;
   renderJoints(); renderPoses(); renderCfg(); cartMsg();
+  // подпись кнопок сустава 6 — по названию сустава у выбранного типа
+  document.querySelectorAll(".j6n").forEach((el, k) => { const n = ARM_JOINTS[5].name; el.textContent = el.closest("p") ? n.toLowerCase() : n; });
   navState();
   if (S.view === "wiz") wizRender();
   if (A.three) {
@@ -3513,6 +3778,9 @@ $("#vWiz").onclick = () => setView("wiz");
 $("#wzTypeM").onclick = () => setArmType("metal");
 $("#wzTypeP").onclick = () => setArmType("plastic");
 
+// демо-шина повторяет выбранный тип привода на ID 6
+function syncSimKind() { if (S.link && S.mode === "sim" && S.link.setKind6 && A.cfg[AXJ].id === 6) S.link.setKind6(A.cfg[AXJ].servo); }
+
 /* ============ помощник подготовки приводов ============ */
 const W = { cur: 0, st: [], found: null, mode: "horn", busy: false, focused: false, holding: false };
 // прогресс подготовки живёт только до перезагрузки страницы: каждый запуск начинается с чистого листа
@@ -3524,6 +3792,12 @@ const wizSave = () => {};
 const wizDone = (i) => W.st[i].id && W.st[i].shaft && W.st[i].horn;
 function hornText(k, id) {
   const extra = ARM.hornExtra[k];
+  if (jkind(k - 1) === "ax") return [
+    "Не поворачивайте вал. У AX-12A фланец ставится по меткам: совместите метку (насечку) на фланце с меткой на выходном валу.",
+    "Закрепите фланец центральным винтом.",
+    `Поставьте маркером <b>риску</b> на краю фланца и напротив на корпусе. При сборке совмещайте риски. Подпишите корпус: «ID ${id}».`,
+    "На 3D-модели показан Feetech ST3215 — у AX-12A другой корпус, но место в манипуляторе то же. После сборки ноль сустава задаётся в «Настройке суставов».",
+  ];
   return [
     "Не поворачивайте вал. Наденьте фланец на шлицы так, чтобы 4 отверстия встали <b>крестом «+»</b>: два вдоль длинной стороны корпуса, два поперёк (зелёный крест на модели).",
     "Шлицы дают шаг 14,4°, поэтому крест может встать неточно. Выберите ближайшее положение, остаток уберёт калибровка после сборки.",
@@ -3547,6 +3821,16 @@ function wizRender() {
   $("#wzIdTitle").textContent = `Назначьте ID ${id}`;
   $("#wzId").textContent = `Записать ID ${id}`;
   $("#wzHornText").innerHTML = hornText(k, id).map((t) => `<li>${t}</li>`).join("");
+  const ax = jkind(i) === "ax";
+  $("#wzKindRow").hidden = i !== AXJ;
+  $("#wzKindAX").setAttribute("aria-pressed", String(ax)); $("#wzKindST").setAttribute("aria-pressed", String(!ax));
+  $("#wzKindAX").disabled = $("#wzKindST").disabled = W.busy;
+  $("#wzKindNote").textContent = ax
+    ? "Dynamixel AX-12A: 1024 единицы на 300°, середина 512. Новый AX-12A обычно уже имеет ID 1 и 1 Мбит/с."
+    : "Feetech ST3215: 4096 шагов на оборот, середина 2048.";
+  $("#wzIdNote").textContent = ax ? "Запишется ID, скорость 1 Мбит/с и режим «позиция» (пределы угла 0–1023)." : "Запишется ID, скорость 1 Мбит/с, режим «позиция» и полный диапазон угла 0–4095.";
+  $("#wzShaftNote").textContent = ax ? "Привод повернёт вал в положение 512 (150°) и будет его удерживать, пока вы надеваете фланец." : "Привод повернёт вал в положение 2048 (180°) и будет его удерживать, пока вы надеваете фланец.";
+  $("#wzShaft").textContent = ax ? "Повернуть вал в 512" : "Повернуть вал в 2048";
   const on = armConnected() && !W.busy;
   const f1 = !!W.found || st.id;
   $("#ws1").className = f1 ? "ok" : "";
@@ -3566,7 +3850,7 @@ function wizRender() {
   ["wzHorn", "wzArm"].forEach((b) => $("#" + b).setAttribute("aria-pressed", String((b === "wzHorn") === (W.mode === "horn"))));
 }
 async function wizGo(i) {
-  if (W.holding && armConnected()) { try { await S.bus.write(A.cfg[W.cur].id, 40, [0]); } catch (e) {} W.holding = false; }
+  if (W.holding && armConnected()) { try { await torqueOffJ(W.cur); } catch (e) {} W.holding = false; }
   W.cur = i; W.found = null; wizSave();
   ["wzScanRes", "wzIdRes", "wzShaftRes", "wzHornRes"].forEach((r) => wizRes(r));
   wizRender();
@@ -3574,12 +3858,14 @@ async function wizGo(i) {
   updateFallback();
 }
 $("#wzPrev").onclick = () => wizGo(W.cur - 1);
+$("#wzKindAX").onclick = () => setJointServo(AXJ, "ax");
+$("#wzKindST").onclick = () => setJointServo(AXJ, "sts");
 $("#wzNext").onclick = () => wizGo(W.cur + 1);
 ["wzHorn", "wzArm"].forEach((b) => $("#" + b).onclick = () => { W.mode = b === "wzHorn" ? "horn" : "arm"; wizRender(); if (A.three) A.three.focus(W.cur + 1, W.mode); updateFallback(); });
 $("#wzReset").onclick = () => { W.st.forEach((x) => { x.id = x.shaft = x.horn = false; }); wizGo(0); log("Подготовка сервоприводов к сборке начата заново"); };
 $("#wzDemo").onclick = () => {
   if (!S.link || S.mode !== "sim") return;
-  S.link.servos = [S.link._servo(1, 0, Math.floor(Math.random() * 4096))];
+  S.link.servos = [jkind(W.cur) === "ax" ? S.link._ax(1, 1, Math.floor(Math.random() * 1024)) : S.link._servo(1, 0, Math.floor(Math.random() * 4096))];
   W.found = null; wizRender();
   wizRes("wzScanRes", "info", "Демо: на шине один новый привод — ID 1, вал в случайном положении. Нажмите «Найти привод».");
 };
@@ -3605,14 +3891,36 @@ $("#wzScan").onclick = () => wizBusy(async () => {
   if (!res.length) { wizRes("wzScanRes", "bad", "Привод не найден. Проверьте выключатель питания, разъём и переключатели: DIP3 = ON, DIP4 = OFF."); return; }
   if (res.length > 1) { wizRes("wzScanRes", "bad", `На шине несколько приводов: ID ${res.map((r) => r.id).join(", ")}. Оставьте подключённым только тот, который готовите.`); return; }
   W.found = res[0];
+  await S.bus.setBaud(W.found.baud);
+  const kind = await detectKind(S.bus, W.found.id);
+  await S.bus.setBaud(1000000);
+  if (kind && kind !== jkind(W.cur)) {
+    if (W.cur === AXJ) { setJointServo(AXJ, kind); log(`Подготовка: найден ${KIND[kind].name}, тип привода сустава 6 переключён`); }
+    else { wizRes("wzScanRes", "bad", `Найден ${KIND[kind].name} (ID ${W.found.id}), а на этом месте нужен Feetech ST3215.`); W.found = null; return; }
+  }
   const tid = A.cfg[W.cur].id;
-  wizRes("wzScanRes", "ok", `Найден привод: ID ${W.found.id}, ${fmtBaud(W.found.baud)}.` + (W.found.id === tid && W.found.baud === 1000000 ? " ID уже нужный, всё равно запишите настройки." : ""));
+  wizRes("wzScanRes", "ok", `Найден ${KIND[jkind(W.cur)].name}: ID ${W.found.id}, ${fmtBaud(W.found.baud)}.` + (W.found.id === tid && W.found.baud === 1000000 ? " ID уже нужный, всё равно запишите настройки." : ""));
   log(`Подготовка: найден ID ${W.found.id} на ${fmtBaud(W.found.baud)}`);
 });
 $("#wzId").onclick = () => wizBusy(async () => {
   const f = W.found, tid = A.cfg[W.cur].id;
   if (!f) return;
   await S.bus.setBaud(f.baud);
+  if (jkind(W.cur) === "ax") {
+    // AX-12A: ID — регистр 3, скорость — 4 (код 1 = 1 Мбит/с), пределы угла 6–9; блокировку (47) не трогаем
+    await S.bus.write(f.id, 24, [0]);
+    await S.bus.write(f.id, 6, [0, 0, 0xff, 0x03]);
+    if (f.id !== tid) { await S.bus.write(f.id, 3, [tid]); await sleep(20); }
+    if (f.baud !== 1000000) { await S.bus.write(tid, 4, [1]); await sleep(30); }
+    await S.bus.setBaud(1000000); busBaudSel.value = 1000000;
+    let ok = false;
+    try { const r = await S.bus.read(tid, 3, 1); ok = r.params[0] === tid; } catch (e) {}
+    if (!ok) { wizRes("wzIdRes", "bad", `После записи привод не отвечает как ID ${tid}. Нажмите «Найти привод» и повторите.`); W.found = null; return; }
+    W.st[W.cur].id = true; W.found = { id: tid, baud: 1000000 };
+    wizRes("wzIdRes", "ok", `ID ${tid} записан, 1 Мбит/с, режим «позиция» (AX-12A).`);
+    log(`Подготовка: AX-12A ID ${f.id} → ${tid}`);
+    return;
+  }
   await S.bus.write(f.id, 40, [0]);
   await S.bus.write(f.id, 55, [0]);
   await S.bus.write(f.id, 33, [0]);
@@ -3631,24 +3939,25 @@ $("#wzId").onclick = () => wizBusy(async () => {
 $("#wzShaft").onclick = () => wizBusy(async () => {
   const id = A.cfg[W.cur].id;
   if (!(await S.bus.ping(id))) { wizRes("wzShaftRes", "bad", `ID ${id} не отвечает. Проверьте подключение или повторите шаг 1.`); return; }
-  await S.bus.write(id, 41, [30, 0x00, 0x08, 0, 0, 0xdc, 0x05]);
-  await S.bus.write(id, 40, [1]);
+  const ax = jkind(W.cur) === "ax", K = jK(W.cur), mid = K.center, tol = ax ? 3 : 4, uw = unitWord(W.cur);
+  if (ax) { const v = axSpeedFromDegS(60); await S.bus.write(id, 30, [mid & 0xff, mid >> 8, v & 0xff, v >> 8]); await S.bus.write(id, 24, [1]); }
+  else { await S.bus.write(id, 41, [30, 0x00, 0x08, 0, 0, 0xdc, 0x05]); await S.bus.write(id, 40, [1]); }
   W.holding = true;
   let pos = null;
-  const t0 = performance.now();
+  const t0 = performance.now(), u2d = (p) => p * K.range / K.units;
   while (performance.now() - t0 < 5000) {
     await sleep(120);
-    try { const r = await S.bus.read(id, 56, 2); pos = sm16(u16(r.params, 0)); } catch (e) { pos = null; }
-    if (pos !== null) wizRes("wzShaftRes", "info", `Вал: ${pos} шаг (${nf1(stepsToDeg(pos))}°)…`);
-    if (pos !== null && Math.abs(pos - 2048) <= 4) break;
+    try { const r = await S.bus.read(id, K.reg.pos, 2); pos = ax ? u16(r.params, 0) : sm16(u16(r.params, 0)); } catch (e) { pos = null; }
+    if (pos !== null) wizRes("wzShaftRes", "info", `Вал: ${pos} ${uw} (${nf1(u2d(pos))}°)…`);
+    if (pos !== null && Math.abs(pos - mid) <= tol) break;
   }
-  if (pos === null || Math.abs(pos - 2048) > 4) { wizRes("wzShaftRes", "bad", `Вал не дошёл до 2048 (сейчас ${pos ?? "нет ответа"}). Проверьте, что вал ничто не держит, и повторите.`); return; }
+  if (pos === null || Math.abs(pos - mid) > tol) { wizRes("wzShaftRes", "bad", `Вал не дошёл до ${mid} (сейчас ${pos ?? "нет ответа"}). Проверьте, что вал ничто не держит, и повторите.`); return; }
   W.st[W.cur].shaft = true; wizSave();
-  wizRes("wzShaftRes", "ok", `Вал в положении ${pos} шаг (${nf1(stepsToDeg(pos))}°) и удерживается. Не поворачивайте его.`);
+  wizRes("wzShaftRes", "ok", `Вал в положении ${pos} ${uw} (${nf1(u2d(pos))}°) и удерживается. Не поворачивайте его.`);
 });
 $("#wzHorn4").onclick = () => wizBusy(async () => {
   W.st[W.cur].horn = true; wizSave();
-  if (armConnected() && W.holding) { try { await S.bus.write(A.cfg[W.cur].id, 40, [0]); } catch (e) {} W.holding = false; }
+  if (armConnected() && W.holding) { try { await torqueOffJ(W.cur); } catch (e) {} W.holding = false; }
   wizRes("wzHornRes", "ok", W.cur < NJ - 1 ? "Готово, вал отпущен. Отключите привод и переходите к следующему." : "Готово, вал отпущен. Это был последний привод.");
 });
 const _updateButtonsBase = updateButtons;
@@ -3656,6 +3965,7 @@ updateButtons = function () {
   _updateButtonsBase();
   const p = $("#armPill");
   if (S.view === "wiz") wizRender();
+  syncSimKind();
   if (S.link) { p.className = "pill ok"; p.textContent = "На связи · ID " + A.cfg.map((c) => c.id).join(", "); }
   else { p.className = "pill"; p.textContent = "Без связи — только модель"; A.torque = false; A.lastSteps.fill(null); A.actual.fill(null); renderActual(); }
 };
