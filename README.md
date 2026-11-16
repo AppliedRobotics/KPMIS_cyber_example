@@ -15,9 +15,9 @@
 | [`ar_bbl_examples`](ar_bbl_examples) | 19 проектов AR BBL для ESP32 и Arduino с описанием особенностей блоков, сгенерированный C++-код |
 | [`board_tests`](board_tests) | Тесты контроллера, моторов и модулей датчиков Kirus |
 | [`mecanum_4wd`](mecanum_4wd) | Мобильная платформа 4WD с меканум-колёсами: тест и пульт по Wi-Fi (платформа и манипулятор) |
-| [`manipulator`](manipulator) | «Конфигуратор манипулятора» для металлического и пластикового манипуляторов на сервоприводах Feetech ST3215 (сустав 6 — Dynamixel AX-12A или ST3215): приложение, мост для ESP32, инструкция |
-| [`3d_print`](3d_print) | Детали для 3D-печати: звенья пластикового манипулятора, бампер, переходник для платы лидара |
-| [`lidar`](lidar) | Лидар YDLIDAR X3 Pro на Orange Pi 5B: инструкция, Python-программы, настройки ROS 2 и SLAM |
+| [`manipulator`](manipulator) | «Конфигуратор манипулятора» для металлического и пластикового манипуляторов на сервоприводах Feetech ST3215 и Dynamixel AX-12A: приложение, мост для ESP32, инструкция |
+| [`3d_print`](3d_print) | Детали для 3D-печати: звенья пластикового манипулятора, бампер, кронштейн камеры, переходник для платы лидара |
+| [`lidar`](lidar) | Лидар на Orange Pi: [`opi5b`](lidar/opi5b) — YDLIDAR X3 Pro на Orange Pi 5B, [`opi_zero3`](lidar/opi_zero3) — X3 Pro и RPLIDAR C1 на Orange Pi Zero 3 с картой в браузере. Инструкции, Python-программы, ROS 2, SLAM |
 | [`tools`](tools) | Программы обновления прошивки аккумуляторного модуля 12V_3A_PowerBank |
 | [`libraries`](libraries) | Библиотеки DxlMaster2 и FeetechSTS |
 | [`docs`](docs) | Описания электронных модулей с инфографикой ([`docs/hardware`](docs/hardware)) и инструкции: установка Arduino IDE и AR BBL в МОС Desktop 12, обновление прошивки аккумуляторного модуля |
