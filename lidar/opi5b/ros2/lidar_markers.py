@@ -78,7 +78,10 @@ class LidarMarkers(Node):
 
 def main():
     rclpy.init()
-    rclpy.spin(LidarMarkers())
+    try:
+        rclpy.spin(LidarMarkers())
+    except KeyboardInterrupt:
+        pass                         # остановка по Ctrl+C — без сообщения об ошибке
 
 
 if __name__ == '__main__':
