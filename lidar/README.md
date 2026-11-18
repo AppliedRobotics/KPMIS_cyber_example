@@ -5,6 +5,6 @@
 | Папка | Плата | Лидары | Как смотреть карту |
 |---|---|---|---|
 | [`opi5b`](opi5b) | Orange Pi 5B, Ubuntu 22.04 с рабочим столом Xfce | YDLIDAR X3 Pro, SLAMTEC RPLIDAR C1 | RViz2 на рабочем столе платы (VNC) |
-| [`opi_zero3`](opi_zero3) | Orange Pi Zero 3, Ubuntu 22.04 без рабочего стола — удешевлённый вариант | YDLIDAR X3 Pro, SLAMTEC RPLIDAR C1 | Lichtblick в браузере компьютера (МОС ОС или Windows) |
+| [`opi_zero3`](opi_zero3) | Orange Pi Zero 3, Ubuntu 22.04 без рабочего стола | YDLIDAR X3 Pro, SLAMTEC RPLIDAR C1 | Lichtblick в браузере компьютера (МОС ОС или Windows) |
 
 В каждой папке — инструкции в PDF (`docs/`), программы, настройки ROS 2 и контрольная сумма готового образа системы. Сами образы в репозиторий не помещаются.

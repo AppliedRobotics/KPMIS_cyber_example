@@ -14,10 +14,13 @@
   Разгон и торможение плавные (~0,3 с от нуля до полной мощности), аварийный стоп — сразу.
   Причина последнего перезапуска ESP32 и число запусков — на странице и в мониторе порта.
 
-  Манипулятор (металл) — сервоприводы Feetech ST3215 (ID 1–7) на той же шине DXL
-  (разъёмы XP2/XP3). Моторы работают на 57600, сервоприводы — на 1 Мбит/с:
-  ESP32 переключает скорость шины между обменами. Сервоприводы должны быть
-  подготовлены в «Конфигураторе манипулятора» (ID 1–7, 1 Мбит/с, середина 2048).
+  Манипулятор — сервоприводы ID 1–7 на той же шине DXL (разъёмы XP2/XP3):
+  Feetech ST3215, а на суставе 6 (ID 6) — Dynamixel AX-12A (по умолчанию) или
+  Feetech ST3215. Тип привода определяется сам по номеру модели.
+  Моторы работают на 57600, сервоприводы — на 1 Мбит/с: ESP32 переключает
+  скорость шины между обменами. Сервоприводы должны быть подготовлены
+  в «Конфигураторе манипулятора» (ID 1–7, 1 Мбит/с, середина: Feetech — 2048,
+  AX-12A — 512).
   Тип манипулятора — ARM_PLASTIC ниже (0 — металл, основной; 1 — пластик).
 
   Переключатели DIP:
@@ -37,6 +40,11 @@
 #include <Preferences.h>
 #include <esp_system.h>
 #include "page.h"
+
+// Тип сервопривода сустава манипулятора (подробнее — в разделе «Манипулятор»).
+// Объявлен в начале файла: Arduino IDE вставляет объявления функций перед первой
+// функцией, и тип к этому месту уже должен быть известен.
+enum ServoKind : uint8_t { KIND_UNKNOWN = 0, KIND_ST = 1, KIND_AX = 2 };
 
 // ---------- Диагностика перезапусков ----------
 const char *resetText = "";   // причина последнего запуска
@@ -117,11 +125,21 @@ uint32_t lastCmd = 0;
 bool blocked = false, estop = false;
 
 // =====================================================================
-// Минимальная реализация Dynamixel 1.0
+// Минимальная реализация протокола Dynamixel 1.0
+//
+// Пакет команды:  FF FF ID LEN INST PARAM… CHK
+//   ID   — номер устройства (0xFE — всем сразу, ответа нет);
+//   LEN  — число байт после LEN: INST + параметры + CHK;
+//   INST — команда: 0x02 READ, 0x03 WRITE, 0x83 SYNC WRITE;
+//   CHK  — контрольная сумма: ~(ID + LEN + INST + параметры), младший байт.
+// Ответ:          FF FF ID LEN ERR PARAM… CHK  (ERR — байт ошибки устройства).
+// Многобайтные значения передаются младшим байтом вперёд.
+// Шина однопроводная: ESP32 слышит и свой пакет (эхо), его нужно пропустить.
 // =====================================================================
 uint8_t txBuf[96];
 uint8_t txLen = 0;
 
+// Собрать пакет и отправить. Перед отправкой очищаем приёмник от старых байт.
 void dxlSend(uint8_t id, uint8_t inst, const uint8_t *params, uint8_t n) {
   uint8_t i = 0;
   txBuf[i++] = 0xFF;
@@ -138,6 +156,7 @@ void dxlSend(uint8_t id, uint8_t inst, const uint8_t *params, uint8_t n) {
   dxl.flush();
 }
 
+// Прочитать один байт с шины; -1 — если до deadline ничего не пришло
 int dxlReadByte(uint32_t deadline) {
   while (!dxl.available()) {
     if ((int32_t)(millis() - deadline) > 0) return -1;
@@ -145,7 +164,9 @@ int dxlReadByte(uint32_t deadline) {
   return dxl.read();
 }
 
-// Возвращает число байт параметров или -1. Эхо своего пакета пропускается.
+// Принять ответ устройства id. Возвращает число байт параметров или -1.
+// Ищем заголовок FF FF, читаем ID и длину, проверяем контрольную сумму.
+// Эхо своего пакета пропускается (вторая попытка разбора).
 int dxlReceive(uint8_t id, uint8_t *err, uint8_t *params, uint8_t maxParams, uint32_t timeoutMs) {
   uint32_t deadline = millis() + timeoutMs;
   for (uint8_t attempt = 0; attempt < 2; attempt++) {
@@ -184,6 +205,7 @@ int dxlReceive(uint8_t id, uint8_t *err, uint8_t *params, uint8_t maxParams, uin
   return -1;
 }
 
+// Записать size байт с адреса addr и дождаться подтверждения
 bool dxlWrite(uint8_t id, uint8_t addr, const uint8_t *data, uint8_t size) {
   uint8_t prm[8];
   prm[0] = addr;
@@ -193,6 +215,7 @@ bool dxlWrite(uint8_t id, uint8_t addr, const uint8_t *data, uint8_t size) {
   return dxlReceive(id, &err, dummy, 0, 20) >= 0 && err == 0;
 }
 
+// Прочитать size байт с адреса addr
 bool dxlRead(uint8_t id, uint8_t addr, uint8_t *data, uint8_t size) {
   uint8_t prm[2] = {addr, size};
   dxlSend(id, 0x02, prm, 2);
@@ -202,7 +225,12 @@ bool dxlRead(uint8_t id, uint8_t addr, uint8_t *data, uint8_t size) {
 
 // =====================================================================
 // Моторы
+//
+// Два модуля моторов на плате (ID 71 и 72), у каждого два канала M1 и M2.
+// Мощность канала: −1023…1023 (знак — направление). Запись мощности
+// включает у модуля режим ШИМ.
 // =====================================================================
+// Начальная настройка модуля: режим энкодера и максимальная мощность
 void initModule(uint8_t id) {
   uint8_t mode = 1;                          // энкодер AB
   dxlWrite(id, REG_ENCODER_MODE, &mode, 1);
@@ -210,6 +238,8 @@ void initModule(uint8_t id) {
   dxlWrite(id, REG_MAX_POWER, mp, 2);
 }
 
+// Учёт связи с модулем: 3 неудачи подряд — модуль «потерян».
+// Когда модуль снова отвечает, настраиваем его заново (мог перезагрузиться).
 void markModule(Module &m, bool ok) {
   if (ok) {
     if (!m.ok) initModule(m.id);  // модуль появился или перезагрузился
@@ -232,13 +262,19 @@ void setBus(uint32_t baud) {
   while (dxl.available()) dxl.read();
 }
 
+// Записать мощности M1 и M2 одной командой (регистры 28–31)
 bool writePowers(uint8_t id, int16_t m1, int16_t m2) {
   uint8_t d[4] = {(uint8_t)m1, (uint8_t)((uint16_t)m1 >> 8),
                   (uint8_t)m2, (uint8_t)((uint16_t)m2 >> 8)};
   return dxlWrite(id, REG_M1_POWER, d, 4);
 }
 
-// vx — вперёд, vy — влево, w — против часовой; -1023..1023
+// Кинематика меканум-платформы (ролики образуют «X» при взгляде сверху).
+// vx — вперёд, vy — влево, w — поворот против часовой; −1023..1023.
+// Скорость колеса — сумма трёх составляющих со своими знаками:
+//   FL = vx − vy − w   FR = vx + vy + w   RL = vx + vy − w   RR = vx − vy + w
+// Если какое-то колесо получилось больше 1023, все уменьшаются в одно и то же
+// число раз — так направление движения сохраняется.
 void computePowers(long vx, long vy, long w) {
   vy *= STRAFE_SIGN;
   long p[4] = {vx - vy - w, vx + vy + w, vx + vy - w, vx - vy + w};
@@ -257,6 +293,8 @@ void rampPowers() {
   }
 }
 
+// Отправить мощности обоим модулям. WHEEL_SIGN учитывает, что моторы
+// правого борта стоят зеркально и для движения вперёд им нужен минус.
 void sendMotors() {
   setBus(MOTOR_BAUD);
   bool a = writePowers(ID_LEFT,  wheelPower[FL] * WHEEL_SIGN[FL], wheelPower[RL] * WHEEL_SIGN[RL]);
@@ -265,6 +303,7 @@ void sendMotors() {
   markModule(modRight, b);
 }
 
+// Прочитать энкодеры и скорости всех колёс (регистры 32–39 каждого модуля)
 void readEncoders() {
   setBus(MOTOR_BAUD);
   uint8_t d[8];
@@ -283,9 +322,35 @@ void readEncoders() {
 }
 
 // =====================================================================
-// Манипулятор: сервоприводы Feetech ST3215, протокол как у Dynamixel 1.0
+// Манипулятор
+//
+// Суставы 1–5 и схват (ID 7) — сервоприводы Feetech ST3215.
+// Сустав 6 (ID 6) — Dynamixel AX-12A (по умолчанию) или Feetech ST3215.
+// Оба типа говорят на протоколе Dynamixel 1.0 одного формата, но таблицы
+// регистров и единицы у них разные:
+//
+//                      Feetech ST3215          Dynamixel AX-12A
+//   Положение          0..4095 на 360°         0..1023 на 300°
+//   Середина           2048 (180°)             512 (150°)
+//   Удержание (момент) регистр 40              регистр 24
+//   Цель               регистры 41–47:         регистры 30–33:
+//                      ускорение, цель,        цель, скорость
+//                      время, скорость
+//   Скорость           шагов в секунду         0,111 об/мин на единицу
+//   Текущее положение  регистр 56              регистр 36
+//
+// Тип каждого привода ESP32 узнаёт сам при первом ответе — по номеру модели
+// (регистры 0–1): 12 — AX-12A, 18 — AX-18A, 300 — AX-12W, иначе — Feetech.
+// Так же тип определяет «Конфигуратор манипулятора».
+//
+// ВАЖНО: AX-12A нельзя включать в общую команду для Feetech (регистры 41–47):
+// у AX-12A регистр 47 — блокировка EEPROM. Поэтому ему отправляется своя команда.
 // =====================================================================
 #define ARM_PLASTIC 0   // 0 — «Манипулятор (металл)» (основной), 1 — «Манипулятор (пластик)»
+#define JOINT6_AX   1   // какой привод ожидается на ID 6 до первого ответа:
+                        // 1 — Dynamixel AX-12A (по умолчанию), 0 — Feetech ST3215.
+                        // Влияет только на пределы ползунка на странице; протокол
+                        // выбирается по фактически ответившему приводу.
 
 struct ArmJoint {
   const char *name;
@@ -302,7 +367,7 @@ const ArmJoint ARM[ARM_N] = {
   {"Локоть",             3, +1, -130, 130},
   {"Поворот предплечья", 4, +1, -150, 150},
   {"Наклон кисти",       5, +1, -110, 110},
-  {"Поворот схвата",     6, +1, -150, 150},
+  {"Поворот схвата",     6, +1, -150, 150},   // с AX-12A — ±145° (см. armMin/armMax)
   {"Схват",              7, +1,    0,  70},   // 0° — раскрыт, 70° — сомкнут
 };
 #else
@@ -317,12 +382,21 @@ const ArmJoint ARM[ARM_N] = {
   {"Схват",             7, +1,    0,  70},    // 0° — раскрыт, 70° — сомкнут
 };
 #endif
-const uint16_t ARM_ZERO = 2048;   // положение привода в позе модели (середина после подготовки)
+
+// Feetech ST3215
+const uint16_t ST_ZERO = 2048;    // положение в позе модели (середина после подготовки)
 const uint8_t ST_TORQUE = 40, ST_ACC = 41, ST_PRESENT = 56;
-const uint8_t ARM_ACC = 40;       // ускорение (0 — максимальное, рывком)
+const uint8_t ARM_ACC = 40;       // ускорение Feetech (0 — максимальное, рывком)
+// Dynamixel AX-12A
+const uint16_t AX_ZERO = 512;     // середина AX-12A (150°). Смещения нуля в EEPROM у AX нет,
+                                  // поэтому фланец ставят по меткам в середине (см. Конфигуратор)
+const uint8_t AX_TORQUE = 24, AX_GOAL = 30, AX_PRESENT = 36;
+const int16_t AX_LIMIT_DEG = 145; // AX-12A поворачивается на 300°, оставляем запас от краёв
+const uint8_t REG_MODEL = 0;      // номер модели (2 байта) — одинаковый адрес у обоих типов
 
 float armTarget[ARM_N];           // цель, градусы от позы модели
-int16_t armPos[ARM_N];            // текущее положение, шаги 0..4095 (-1 — неизвестно)
+int16_t armPos[ARM_N];            // текущее положение в единицах привода (-1 — неизвестно)
+ServoKind armKind[ARM_N];         // тип привода (узнаётся при первом ответе)
 bool armFound[ARM_N];
 uint8_t armFail[ARM_N];
 uint8_t armErr[ARM_N];            // байт ошибки из ответа привода (перегрев, перегрузка, питание…)
@@ -332,26 +406,51 @@ const uint8_t ARM_TIMEOUT_MS = 8;   // ожидание ответа приво�
 const uint8_t ARM_LOST_AFTER = 5;   // привод считается пропавшим после стольких неудач подряд
 bool armTorque = false;           // удержание включено
 bool armDirty = false;            // есть новая цель — отправить
-uint16_t armSpeed = 800;          // шагов/с для самого дальнего сустава
+uint16_t armSpeed = 800;          // скорость самого дальнего сустава, шагов Feetech в секунду
+                                  // (800 шагов/с ≈ 70 °/с)
 uint8_t armCmd = 0;               // 1 — удерживать, 2 — отпустить, 3 — поза модели
 uint8_t armProbe = 0;             // какой ненайденный привод опросить в этом цикле
 
-int armDegToSteps(uint8_t i, float deg) {
-  deg = constrain(deg, (float)ARM[i].minDeg, (float)ARM[i].maxDeg);
-  long s = ARM_ZERO + lroundf(ARM[i].dir * deg * 4096.0f / 360.0f);
+// Какой тип ожидать на суставе, пока привод не ответил
+ServoKind armKindOrDefault(uint8_t i) {
+  if (armKind[i] != KIND_UNKNOWN) return armKind[i];
+  return (ARM[i].id == 6 && JOINT6_AX) ? KIND_AX : KIND_ST;
+}
+
+// Пределы сустава с учётом типа привода
+int16_t armMin(uint8_t i) {
+  return armKindOrDefault(i) == KIND_AX ? max(ARM[i].minDeg, (int16_t)-AX_LIMIT_DEG) : ARM[i].minDeg;
+}
+int16_t armMax(uint8_t i) {
+  return armKindOrDefault(i) == KIND_AX ? min(ARM[i].maxDeg, AX_LIMIT_DEG) : ARM[i].maxDeg;
+}
+
+// Градусы от позы модели → единицы привода
+int armDegToPos(uint8_t i, float deg) {
+  deg = constrain(deg, (float)armMin(i), (float)armMax(i));
+  if (armKindOrDefault(i) == KIND_AX) {
+    long p = AX_ZERO + lroundf(ARM[i].dir * deg * 1024.0f / 300.0f);
+    return constrain(p, 0L, 1023L);
+  }
+  long s = ST_ZERO + lroundf(ARM[i].dir * deg * 4096.0f / 360.0f);
   return constrain(s, 0L, 4095L);
 }
 
-float armStepsToDeg(uint8_t i, int steps) {
-  return (steps - (int)ARM_ZERO) * 360.0f / 4096.0f * ARM[i].dir;
+// Единицы привода → градусы от позы модели
+float armPosToDeg(uint8_t i, int pos) {
+  if (armKindOrDefault(i) == KIND_AX)
+    return (pos - (int)AX_ZERO) * 300.0f / 1024.0f * ARM[i].dir;
+  return (pos - (int)ST_ZERO) * 360.0f / 4096.0f * ARM[i].dir;
 }
 
+// Чтение регистров привода (READ, инструкция 0x02). err — байт ошибки из ответа.
 bool ftRead(uint8_t id, uint8_t addr, uint8_t *d, uint8_t n, uint8_t *err) {
   uint8_t prm[2] = {addr, n};
   dxlSend(id, 0x02, prm, 2);
   return dxlReceive(id, err, d, n, ARM_TIMEOUT_MS) == n;
 }
 
+// Запись одного байта (WRITE, инструкция 0x03)
 bool ftWrite1(uint8_t id, uint8_t addr, uint8_t v) {
   uint8_t prm[2] = {addr, v};
   dxlSend(id, 0x03, prm, 2);
@@ -359,46 +458,96 @@ bool ftWrite1(uint8_t id, uint8_t addr, uint8_t v) {
   return dxlReceive(id, &err, dummy, 0, 4) >= 0;
 }
 
+// Узнать тип привода по номеру модели (регистры 0–1)
+ServoKind armDetectKind(uint8_t id) {
+  uint8_t d[2], err = 0;
+  if (!ftRead(id, REG_MODEL, d, 2, &err)) return KIND_UNKNOWN;
+  uint16_t model = d[0] | (d[1] << 8);
+  if (model == 12 || model == 18 || model == 300) return KIND_AX;  // AX-12A, AX-18A, AX-12W
+  return KIND_ST;
+}
+
+// Включить или снять удержание у всех найденных приводов
 void armSetTorque(bool on) {
   for (uint8_t i = 0; i < ARM_N; i++)
-    if (armFound[i]) ftWrite1(ARM[i].id, ST_TORQUE, on ? 1 : 0);
+    if (armFound[i]) ftWrite1(ARM[i].id, armKind[i] == KIND_AX ? AX_TORQUE : ST_TORQUE, on ? 1 : 0);
   armTorque = on;
 }
 
-// SYNC WRITE в регистры 41–47 (ускорение, цель, время, скорость) всем суставам сразу.
-// Скорости подобраны так, чтобы все суставы пришли к цели одновременно.
+// Отправка целей всем суставам.
+// Скорости подобраны так, чтобы все суставы пришли к цели одновременно:
+// самый дальний сустав идёт со скоростью armSpeed, остальные — медленнее
+// пропорционально своему пути. Путь считается в градусах, потому что
+// единицы у Feetech и AX-12A разные.
 void armSendGoals() {
   int goal[ARM_N];
-  int dist[ARM_N];
-  int maxd = 0;
+  float distDeg[ARM_N];
+  float maxDeg = 0;
   for (uint8_t i = 0; i < ARM_N; i++) {
-    goal[i] = armDegToSteps(i, armTarget[i]);
-    dist[i] = armPos[i] >= 0 ? abs(goal[i] - armPos[i]) : 0;
-    if (dist[i] > maxd) maxd = dist[i];
+    goal[i] = armDegToPos(i, armTarget[i]);
+    distDeg[i] = armPos[i] >= 0 ? fabsf(armTarget[i] - armPosToDeg(i, armPos[i])) : 0;
+    if (distDeg[i] > maxDeg) maxDeg = distDeg[i];
   }
+  const float maxDps = armSpeed * 360.0f / 4096.0f;   // скорость самого дальнего сустава, °/с
+
+  // Цели получают только найденные приводы с известным типом: команда в чужие
+  // регистры могла бы, например, переключить режим привода другого типа.
+  //
+  // 1) Feetech: одна команда SYNC WRITE (0x83) в регистры 41–47 для всех ST3215.
+  //    Формат: адрес, длина данных на привод, затем для каждого привода
+  //    ID + ускорение + цель (2 байта) + время (2 байта, не используется) + скорость (2 байта).
   uint8_t prm[2 + 8 * ARM_N];
   uint8_t n = 0;
   prm[n++] = ST_ACC;
   prm[n++] = 7;
   for (uint8_t i = 0; i < ARM_N; i++) {
-    uint16_t spd = maxd > 0 ? (uint32_t)armSpeed * dist[i] / maxd : armSpeed;
-    if (spd < 40) spd = 40;
+    if (!armFound[i] || armKind[i] != KIND_ST) continue;  // только найденные Feetech; AX-12A сюда нельзя (регистр 47!)
+    float dps = maxDeg > 0 ? maxDps * distDeg[i] / maxDeg : maxDps;
+    uint16_t spd = lroundf(dps * 4096.0f / 360.0f);
+    if (spd < 40) spd = 40;                           // слишком медленно — привод «залипает»
     prm[n++] = ARM[i].id;
     prm[n++] = ARM_ACC;
     prm[n++] = goal[i] & 0xFF;  prm[n++] = goal[i] >> 8;
     prm[n++] = 0;               prm[n++] = 0;          // время — не используется
     prm[n++] = spd & 0xFF;      prm[n++] = spd >> 8;
   }
-  dxlSend(0xFE, 0x83, prm, n);
+  if (n > 2) dxlSend(0xFE, 0x83, prm, n);             // 0xFE — всем; ответа нет
+
+  // 2) Dynamixel AX-12A: своя команда SYNC WRITE в регистры 30–33 (цель + скорость).
+  //    Скорость AX: 1 единица = 0,111 об/мин ≈ 0,666 °/с. 0 означает «максимум без
+  //    контроля», поэтому меньше 1 не отправляем.
+  uint8_t ax[2 + 5 * ARM_N];
+  uint8_t m = 0;
+  ax[m++] = AX_GOAL;
+  ax[m++] = 4;
+  for (uint8_t i = 0; i < ARM_N; i++) {
+    if (!armFound[i] || armKind[i] != KIND_AX) continue;  // только найденные AX-12A
+    float dps = maxDeg > 0 ? maxDps * distDeg[i] / maxDeg : maxDps;
+    uint16_t spd = constrain(lroundf(dps / 0.666f), 1L, 1023L);
+    ax[m++] = ARM[i].id;
+    ax[m++] = goal[i] & 0xFF;  ax[m++] = goal[i] >> 8;
+    ax[m++] = spd & 0xFF;      ax[m++] = spd >> 8;
+  }
+  if (m > 2) dxlSend(0xFE, 0x83, ax, m);
 }
 
+// Опрос положения. Найденные приводы читаем каждый цикл, ненайденные —
+// по одному за цикл, чтобы поиск пропавших не тормозил управление.
 void armReadPositions() {
   for (uint8_t i = 0; i < ARM_N; i++) {
-    // найденные приводы читаем каждый цикл, ненайденные — по одному за цикл
     if (!armFound[i] && i != armProbe) continue;
+    // Привод ответил впервые (или после пропадания) — узнаём его тип
+    if (armKind[i] == KIND_UNKNOWN) {
+      armKind[i] = armDetectKind(ARM[i].id);
+      if (armKind[i] == KIND_UNKNOWN) {               // не ответил — попробуем в следующий раз
+        if (++armFail[i] >= ARM_LOST_AFTER) { armFound[i] = false; armPos[i] = -1; }
+        continue;
+      }
+    }
+    uint8_t reg = armKind[i] == KIND_AX ? AX_PRESENT : ST_PRESENT;
     uint8_t d[2], err = 0;
-    bool ok = ftRead(ARM[i].id, ST_PRESENT, d, 2, &err);
-    if (!ok && armFound[i]) ok = ftRead(ARM[i].id, ST_PRESENT, d, 2, &err);  // одна повторная попытка
+    bool ok = ftRead(ARM[i].id, reg, d, 2, &err);
+    if (!ok && armFound[i]) ok = ftRead(ARM[i].id, reg, d, 2, &err);  // одна повторная попытка
     if (armFound[i] || ok) {
       armTries[i]++;
       if (ok) armOks[i]++;
@@ -406,14 +555,19 @@ void armReadPositions() {
     }
     if (ok) {
       int v = d[0] | (d[1] << 8);
-      if (v & 0x8000) v = -(v & 0x7FFF);    // знак в старшем бите
-      armPos[i] = constrain(v, 0, 4095);
+      if (armKind[i] == KIND_AX) {
+        armPos[i] = constrain(v, 0, 1023);
+      } else {
+        if (v & 0x8000) v = -(v & 0x7FFF);    // у Feetech знак в старшем бите
+        armPos[i] = constrain(v, 0, 4095);
+      }
       armErr[i] = err;
       armFound[i] = true;
       armFail[i] = 0;
     } else if (++armFail[i] >= ARM_LOST_AFTER) {
       armFound[i] = false;
       armPos[i] = -1;
+      armKind[i] = KIND_UNKNOWN;              // привод могли заменить другим — узнаем заново
     }
   }
   do { armProbe = (armProbe + 1) % ARM_N; } while (armFound[armProbe] && armFoundCount() < ARM_N);
@@ -425,12 +579,14 @@ uint8_t armFoundCount() {
   return c;
 }
 
+// Один цикл манипулятора: переключить шину на 1 Мбит/с, прочитать положения,
+// выполнить команду со страницы и отправить новые цели.
 void armCycle() {
   setBus(SERVO_BAUD);
   armReadPositions();
   if (armCmd == 1) {                        // удерживать там, где стоит
     for (uint8_t i = 0; i < ARM_N; i++)
-      if (armPos[i] >= 0) armTarget[i] = armStepsToDeg(i, armPos[i]);
+      if (armPos[i] >= 0) armTarget[i] = armPosToDeg(i, armPos[i]);
     armDirty = true;
   } else if (armCmd == 2) {                 // отпустить
     armSetTorque(false);
@@ -449,6 +605,10 @@ void armCycle() {
 
 // =====================================================================
 // Данные от Arduino
+//
+// Arduino (скетч Ardu8_Mecanum_Sensors) 20 раз в секунду присылает строку
+//   S,линия1..4,см,концевой Л,концевой П,кнопки,imu,ax,ay,az,gx,gy,gz,mx,my,mz
+// Принимаем по символу, а целую строку разбираем по приходу '\n'.
 // =====================================================================
 char ardLine[160];
 uint8_t ardPos = 0;
@@ -489,7 +649,16 @@ void readArduino() {
 
 // =====================================================================
 // Веб-сервер
+//
+//   /         — страница пульта (текст страницы — в page.h)
+//   /cmd      — команда движения vx, vy, w (−100…100 %), g — защита от препятствия;
+//               в ответ — состояние платформы (JSON)
+//   /state    — только состояние
+//   /armcfg   — описание манипулятора: тип, названия и пределы суставов
+//   /arm      — цели суставов или команда hold / release / home
+//   /beep     — звуковой сигнал
 // =====================================================================
+// Состояние платформы, датчиков и манипулятора одной строкой JSON
 void sendState() {
   bool fresh = sensorsFresh();
   char buf[1700];
@@ -518,7 +687,7 @@ void sendState() {
   for (uint8_t i = 0; i < ARM_N; i++) L += snprintf(buf + L, sizeof(buf) - L, "%s%d", i ? "," : "", armFound[i]);
   L += snprintf(buf + L, sizeof(buf) - L, "],\"a\":[");
   for (uint8_t i = 0; i < ARM_N; i++) {
-    if (armPos[i] >= 0) L += snprintf(buf + L, sizeof(buf) - L, "%s%.1f", i ? "," : "", armStepsToDeg(i, armPos[i]));
+    if (armPos[i] >= 0) L += snprintf(buf + L, sizeof(buf) - L, "%s%.1f", i ? "," : "", armPosToDeg(i, armPos[i]));
     else                L += snprintf(buf + L, sizeof(buf) - L, "%snull", i ? "," : "");
   }
   L += snprintf(buf + L, sizeof(buf) - L, "],\"t\":[");
@@ -527,11 +696,15 @@ void sendState() {
   for (uint8_t i = 0; i < ARM_N; i++) L += snprintf(buf + L, sizeof(buf) - L, "%s%d", i ? "," : "", armErr[i]);
   L += snprintf(buf + L, sizeof(buf) - L, "],\"q\":[");
   for (uint8_t i = 0; i < ARM_N; i++) L += snprintf(buf + L, sizeof(buf) - L, "%s%d", i ? "," : "", armLink[i]);
+  // тип привода: 0 — неизвестен, 1 — Feetech ST3215, 2 — Dynamixel AX-12A
+  L += snprintf(buf + L, sizeof(buf) - L, "],\"k\":[");
+  for (uint8_t i = 0; i < ARM_N; i++) L += snprintf(buf + L, sizeof(buf) - L, "%s%d", i ? "," : "", armKind[i]);
   snprintf(buf + L, sizeof(buf) - L, "]}}");
   server.sendHeader("Cache-Control", "no-store");
   server.send(200, "application/json", buf);
 }
 
+// Команда движения со страницы (приходит 10 раз в секунду)
 void handleCmd() {
   cmdVx = constrain(server.arg("vx").toInt(), -100, 100);
   cmdVy = constrain(server.arg("vy").toInt(), -100, 100);
@@ -548,8 +721,9 @@ void handleArmCfg() {
   j += "\",\"joints\":[";
   for (uint8_t i = 0; i < ARM_N; i++) {
     if (i) j += ",";
-    j += "{\"n\":\""; j += ARM[i].name; j += "\",\"min\":"; j += ARM[i].minDeg;
-    j += ",\"max\":"; j += ARM[i].maxDeg; j += "}";
+    j += "{\"n\":\""; j += ARM[i].name; j += "\",\"min\":"; j += armMin(i);
+    j += ",\"max\":"; j += armMax(i);
+    j += ",\"s\":\""; j += armKindOrDefault(i) == KIND_AX ? "AX-12A" : "ST3215"; j += "\"}";
   }
   j += "]}";
   server.send(200, "application/json", j);
@@ -564,7 +738,7 @@ void handleArm() {
     for (uint8_t i = 0; i < ARM_N; i++) {
       int comma = t.indexOf(',', from);
       String part = comma < 0 ? t.substring(from) : t.substring(from, comma);
-      if (part.length()) armTarget[i] = constrain(part.toFloat(), (float)ARM[i].minDeg, (float)ARM[i].maxDeg);
+      if (part.length()) armTarget[i] = constrain(part.toFloat(), (float)armMin(i), (float)armMax(i));
       if (comma < 0) break;
       from = comma + 1;
     }
@@ -583,6 +757,7 @@ void handleBeep() {
 }
 
 // =====================================================================
+// RGB-светодиод ESP32: аноды к 3,3 В, поэтому LOW — горит
 void rgb(bool r, bool g, bool b) {
   digitalWrite(RGB_R, r ? LOW : HIGH);
   digitalWrite(RGB_G, g ? LOW : HIGH);
@@ -624,7 +799,7 @@ void setup() {
   pinMode(BUZZER, OUTPUT);
 
   dxl.begin(MOTOR_BAUD, SERIAL_8N1, DXL_RX, DXL_TX);
-  for (uint8_t i = 0; i < ARM_N; i++) { armPos[i] = -1; armTarget[i] = 0; armLink[i] = 100; }
+  for (uint8_t i = 0; i < ARM_N; i++) { armPos[i] = -1; armTarget[i] = 0; armLink[i] = 100; armKind[i] = KIND_UNKNOWN; }
   ard.begin(115200, SERIAL_8N1, ARD_RX, ARD_TX);
   delay(500);
   sendMotors();  // нули и проверка модулей
@@ -650,6 +825,7 @@ void setup() {
 
 uint32_t tMotors = 0, tEnc = 0, tLeds = 0, tArm = 0;
 
+// Главный цикл: каждая задача выполняется по своему таймеру и не ждёт других.
 void loop() {
   server.handleClient();
   readArduino();

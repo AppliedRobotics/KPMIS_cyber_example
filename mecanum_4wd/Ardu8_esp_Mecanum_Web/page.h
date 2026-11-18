@@ -379,7 +379,7 @@ async function armInit() {
     const row = document.createElement('div'); row.className = 'jrow';
     const h = document.createElement('div'); h.className = 'jh';
     const dot = document.createElement('span'); dot.className = 'dot';
-    const nm = document.createElement('span'); nm.textContent = j.n;
+    const nm = document.createElement('span'); nm.textContent = j.n + (j.s === 'AX-12A' ? ' · AX-12A' : '');
     const v = document.createElement('span'); v.className = 'jv'; v.textContent = '—';
     h.append(dot, nm, v);
     const r = document.createElement('input'); r.type = 'range'; r.min = j.min; r.max = j.max; r.step = 1; r.value = 0;
@@ -442,9 +442,11 @@ function setGrip(v) { if (!ARM.cfg) return; const k = ARM.cfg.joints.length - 1;
 $('gOpen').addEventListener('click', () => setGrip(ARM.cfg ? ARM.cfg.joints[ARM.cfg.joints.length - 1].min : 0));
 $('gClose').addEventListener('click', () => setGrip(ARM.cfg ? ARM.cfg.joints[ARM.cfg.joints.length - 1].max : 70));
 
-// Биты ошибки в ответе сервопривода Feetech
-function servoErr(e) {
-  const m = [[1, 'напряжение'], [2, 'датчик угла'], [4, 'перегрев'], [8, 'ток'], [32, 'перегрузка']];
+// Биты ошибки в ответе сервопривода: k = 2 — Dynamixel AX-12A, иначе Feetech ST3215
+function servoErr(e, k) {
+  const m = k === 2
+    ? [[1, 'напряжение'], [2, 'предел угла'], [4, 'перегрев'], [8, 'вне диапазона'], [16, 'контрольная сумма'], [32, 'перегрузка'], [64, 'команда']]
+    : [[1, 'напряжение'], [2, 'датчик угла'], [4, 'перегрев'], [8, 'ток'], [32, 'перегрузка']];
   const t = m.filter(([b]) => e & b).map(([, n]) => n);
   return t.length ? t.join(', ') : 'ошибка ' + e;
 }
@@ -476,7 +478,7 @@ function renderArm(a) {
     const q = a.q ? a.q[i] : 100;
     row.v.textContent = 'цель ' + Math.round(ARM.t[i]) + '° · факт ' + act
       + (a.f[i] && q < 100 ? ' · связь ' + q + '%' : '')
-      + (a.e[i] ? ' · ' + servoErr(a.e[i]) : '');
+      + (a.e[i] ? ' · ' + servoErr(a.e[i], a.k ? a.k[i] : 1) : '');
   });
 }
 
