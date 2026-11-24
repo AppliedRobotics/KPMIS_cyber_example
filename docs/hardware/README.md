@@ -8,5 +8,6 @@
 | Модуль «Ультразвуковой дальномер» (Kirus-Ultrasonic) | [kirus_modules.md](kirus_modules.md#модуль-ультразвуковой-дальномер-kirus-ultrasonic) | [A4](infographics/Kirus_Ultrasonic_A4.pdf) |
 | Аккумуляторный модуль 12V_3A_PowerBank | [powerbank.md](powerbank.md) | [A4, 2 стр.](infographics/PowerBank_12V_A4.pdf) |
 | USB-адаптер USB-DXL-AR | [usb_dxl_ar.md](usb_dxl_ar.md) | [A4, 2 стр.](infographics/USB-DXL-AR_A4.pdf) |
+| Модуль технического зрения TrackingCam v3 | [trackingcam.md](trackingcam.md) | [A4, 3 стр.](infographics/TrackingCam3_A4.pdf) |
 
 Инфографика подготовлена для печати на A4.
